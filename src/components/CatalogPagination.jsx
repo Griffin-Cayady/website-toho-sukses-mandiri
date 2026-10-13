@@ -4,15 +4,16 @@ import { cn } from '@/lib/utils';
 
 const GAP = 'gap';
 
-// First, last and the neighbours of the current page; everything else collapses into a gap.
-// Always seven slots, so the bar keeps its width and a gap never stands in for a single page.
-const getPageItems = (current, total) => {
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+// First, last and the current page (plus its neighbours when there is room); everything else collapses into a gap.
+// Always `slots` items (7 on wide screens, 5 on phones), so the bar keeps its width and a gap never stands in for a single page.
+const getPageItems = (current, total, slots) => {
+  if (total <= slots) return Array.from({ length: total }, (_, i) => i + 1);
 
-  const nearStart = current <= 4;
-  const nearEnd = current >= total - 3;
-  const start = nearStart ? 2 : nearEnd ? total - 4 : current - 1;
-  const end = nearStart ? 5 : nearEnd ? total - 1 : current + 1;
+  const siblings = (slots - 5) / 2;
+  const nearStart = current <= siblings + 3;
+  const nearEnd = current >= total - siblings - 2;
+  const start = nearStart ? 2 : nearEnd ? total - (slots - 3) : current - siblings;
+  const end = nearStart ? slots - 2 : nearEnd ? total - 1 : current + siblings;
   const items = [1];
   if (start > 2) items.push(GAP);
   for (let page = start; page <= end; page += 1) items.push(page);
@@ -61,36 +62,38 @@ const CatalogPagination = ({ currentPage, totalPages, totalItems, itemsPerPage, 
           <CaretLeftIcon className="h-4 w-4" weight="bold" aria-hidden="true" />
         </button>
 
-        <ol className="hidden items-center gap-1 sm:flex">
-          {getPageItems(currentPage, totalPages).map((item, i) =>
-            item === GAP ? (
-              <li key={`gap-${i}`} className="flex h-10 w-6 items-end justify-center pb-2.5 text-gray-400" aria-hidden="true">
-                …
-              </li>
-            ) : (
-              <li key={item}>
-                <button
-                  type="button"
-                  onClick={() => onPageChange(item)}
-                  aria-current={item === currentPage ? 'page' : undefined}
-                  aria-label={`Halaman ${item}`}
-                  className={cn(
-                    'inline-flex h-10 min-w-10 items-center justify-center rounded-lg px-3 text-sm font-semibold tabular-nums transition-[background-color,color,box-shadow,transform] duration-200 ease-out active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-1',
-                    item === currentPage
-                      ? 'bg-brand-600 text-white shadow-brand'
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
-                  )}
-                >
-                  {item}
-                </button>
-              </li>
-            ),
-          )}
-        </ol>
-
-        <span className="min-w-[4.5rem] px-2 text-center text-sm font-semibold tabular-nums text-gray-900 sm:hidden">
-          {currentPage} <span className="font-normal text-gray-400">/</span> {totalPages}
-        </span>
+        {/* Phones: 5 slots so the bar fits; from sm: 7 slots. Both let users jump straight to a page. */}
+        {[
+          { slots: 5, className: 'flex sm:hidden' },
+          { slots: 7, className: 'hidden sm:flex' },
+        ].map(({ slots, className }) => (
+          <ol key={slots} className={cn('items-center gap-1', className)}>
+            {getPageItems(currentPage, totalPages, slots).map((item, i) =>
+              item === GAP ? (
+                <li key={`gap-${i}`} className="flex h-10 w-5 items-end justify-center pb-2.5 text-gray-400 sm:w-6" aria-hidden="true">
+                  …
+                </li>
+              ) : (
+                <li key={item}>
+                  <button
+                    type="button"
+                    onClick={() => onPageChange(item)}
+                    aria-current={item === currentPage ? 'page' : undefined}
+                    aria-label={`Halaman ${item}`}
+                    className={cn(
+                      'inline-flex h-10 min-w-10 items-center justify-center rounded-lg px-2 text-sm font-semibold tabular-nums transition-[background-color,color,box-shadow,transform] duration-200 ease-out active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-1 sm:px-3',
+                      item === currentPage
+                        ? 'bg-brand-600 text-white shadow-brand'
+                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
+                    )}
+                  >
+                    {item}
+                  </button>
+                </li>
+              ),
+            )}
+          </ol>
+        ))}
 
         <button
           type="button"

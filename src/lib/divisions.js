@@ -11,24 +11,24 @@ export const DIVISIONS = [
     categoryId: OIL_CATEGORY_ID,
     slug: 'oli',
     menuBlurb: 'Oli hidrolik, mesin diesel, gear, kompresor, dan oli kapal.',
-    name: 'Oli & pelumas',
-    catalogName: 'oli & pelumas',
+    name: 'Oli & Pelumas',
+    catalogName: 'Oli & Pelumas',
     placeholder: IMAGES.placeholderOil,
   },
   {
     categoryId: 2,
     slug: 'kawat-las',
     menuBlurb: 'Kawat CO2/MIG, flux core, stainless, SAW, dan elektroda.',
-    name: 'Kawat las',
-    catalogName: 'kawat las',
+    name: 'Kawat Las',
+    catalogName: 'Kawat Las',
     placeholder: IMAGES.placeholderWire,
   },
   {
     categoryId: 3,
     slug: 'mesin',
     menuBlurb: 'Mesin pertanian, pompa air, mesin kapal, genset, dan kompresor.',
-    name: 'Mesin & peralatan',
-    catalogName: 'mesin & peralatan',
+    name: 'Mesin & Peralatan',
+    catalogName: 'Mesin & Peralatan',
     placeholder: IMAGES.placeholderMachine,
   },
 ];
@@ -38,6 +38,9 @@ const GENERIC_DIVISION = {
   placeholder: IMAGES.productPlaceholder,
 };
 
+// Category names are shown with every word capitalised ("oli & pelumas" -> "Oli & Pelumas"); the rest of each word is kept.
+export const titleCase = (text) => text.replace(/(^|[\s/(-])(\p{L})/gu, (_, before, letter) => before + letter.toUpperCase());
+
 // Every category shares one page, /kategori/, which reads the category id from ?id=.
 export const categoryPath = (id) => `/kategori/?id=${id}`;
 
@@ -45,12 +48,12 @@ export const categoryPath = (id) => `/kategori/?id=${id}`;
 // from the image column), or the branded category placeholder while that column is empty.
 export const divisionFromCategory = (row) => {
   const curated = DIVISIONS.find((d) => d.categoryId === row.id);
-  const name = row.category_name?.trim() || curated?.name || `Kategori ${row.id}`;
+  const name = titleCase(row.category_name?.trim() || curated?.name || `Kategori ${row.id}`);
   // category_description as stored; null when empty. `menuBlurb` falls back to the designed text, `description` does not.
   const description = row.category_description?.trim() || null;
   const photo = { image: row.imageUrl || IMAGES.categoryPlaceholder, thumb: row.imageUrl || IMAGES.categoryPlaceholder };
   if (curated) {
-    return { ...curated, ...photo, path: categoryPath(row.id), name, description, catalogName: name.toLowerCase(), menuBlurb: description || curated.menuBlurb };
+    return { ...curated, ...photo, path: categoryPath(row.id), name, description, catalogName: name, menuBlurb: description || curated.menuBlurb };
   }
   return {
     ...GENERIC_DIVISION,
@@ -60,13 +63,13 @@ export const divisionFromCategory = (row) => {
     path: categoryPath(row.id),
     name,
     description,
-    catalogName: name.toLowerCase(),
+    catalogName: name,
     menuBlurb: description || '',
   };
 };
 
 // Shown for a product whose category is unknown (never expected: those products are filtered out).
-export const UNKNOWN_DIVISION = { ...GENERIC_DIVISION, slug: '', path: '/products', name: 'Produk', catalogName: 'produk', menuBlurb: '' };
+export const UNKNOWN_DIVISION = { ...GENERIC_DIVISION, slug: '', path: '/products', name: 'Produk', catalogName: 'Produk', menuBlurb: '' };
 
 // Whether `division` is the page at `pathname` (no trailing slash) with ?id=`categoryParam`.
 export const isDivisionPage = (division, pathname, categoryParam) =>

@@ -126,6 +126,8 @@ const ProductsView = ({ category = ALL, division = null, divisionParam = ALL }) 
   };
 
   const showOilBrochure = activeDivision === 'oli' || activeDivision === ALL;
+  // The brochure is the oil catalogue, so the button names the oil category (as stored in the database).
+  const oilCategoryName = divisionBySlug.oli?.name || 'Oli & Pelumas';
   const handleDownloadBrochure = () => {
     window.open(OIL_BROCHURE_URL, '_blank', 'noopener');
     toast({
@@ -140,7 +142,8 @@ const ProductsView = ({ category = ALL, division = null, divisionParam = ALL }) 
     : `${filteredProducts.length} produk ${selectedCategory !== ALL ? `dalam ${selectedCategory}` : `di ${scopeName}`}${searchQuery ? ` untuk "${searchQuery}"` : ''}`;
 
   const searchControls = (
-    <div className="flex w-full items-center gap-3 md:w-auto">
+    // Phones: search on its own line, the catalogue button full width below it (always labelled). From sm: one row.
+    <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center md:w-auto">
       <div className="relative flex-grow md:w-80">
         <MagnifyingGlassIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" weight="bold" aria-hidden="true" />
         <Input
@@ -154,10 +157,9 @@ const ProductsView = ({ category = ALL, division = null, divisionParam = ALL }) 
         />
       </div>
       {showOilBrochure && (
-        <Button variant="outline" onClick={handleDownloadBrochure} className="h-11 shrink-0">
+        <Button variant="outline" onClick={handleDownloadBrochure} className="h-11 w-full shrink-0 sm:w-auto">
           <DownloadSimpleIcon className="h-4 w-4" weight="bold" aria-hidden="true" />
-          <span className="hidden sm:inline">Katalog oli (PDF)</span>
-          <span className="sr-only sm:hidden">Unduh katalog oli</span>
+          Download {oilCategoryName} Catalog
         </Button>
       )}
     </div>
