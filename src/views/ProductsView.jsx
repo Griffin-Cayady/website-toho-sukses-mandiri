@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useSyncExternalStore } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -8,6 +8,7 @@ import {
   DownloadSimpleIcon,
   FunnelIcon,
   CheckIcon,
+  CaretDownIcon,
   WarningIcon,
   ArrowClockwiseIcon,
   XIcon,
@@ -24,6 +25,24 @@ import { OIL_BROCHURE_URL } from '@/lib/company';
 const ALL = 'All';
 
 const categoryLabel = (cat) => (cat === ALL ? 'Semua jenis' : cat);
+
+// Products per page the visitor can pick. All divide evenly into the 2- and 3-column grids.
+const PAGE_SIZES = [12, 24, 36];
+const PAGE_SIZE_KEY = 'tsm-catalog-page-size';
+
+// The visitor's last choice on this device, or null (use the screen-size default). Storage can be blocked.
+const readSavedPageSize = () => {
+  try {
+    const saved = Number(window.localStorage.getItem(PAGE_SIZE_KEY));
+    return PAGE_SIZES.includes(saved) ? saved : null;
+  } catch {
+    return null;
+  }
+};
+const subscribeToStorage = (onChange) => {
+  window.addEventListener('storage', onChange);
+  return () => window.removeEventListener('storage', onChange);
+};
 
 /**
  * Product catalogue. On /products it shows every division with tabs (?divisi=...);
@@ -45,6 +64,9 @@ const ProductsView = ({ category = ALL, division = null, divisionParam = ALL }) 
   const currentPage = pageState.key === filterKey ? pageState.page : 1;
   const setCurrentPage = (page) => setPageState({ key: filterKey, page });
   const [isMobile, setIsMobile] = useState(false);
+  // A size picked now, else one saved on an earlier visit (null while prerendering), else the screen-size default.
+  const [chosenPageSize, setChosenPageSize] = useState(null);
+  const savedPageSize = useSyncExternalStore(subscribeToStorage, readSavedPageSize, () => null);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -53,7 +75,7 @@ const ProductsView = ({ category = ALL, division = null, divisionParam = ALL }) 
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const itemsPerPage = isMobile ? 24 : 12;
+  const itemsPerPage = chosenPageSize || savedPageSize || (isMobile ? 24 : 12);
 
   const divisionCounts = useMemo(
     () => products.reduce((acc, p) => ({ ...acc, [p.division]: (acc[p.division] || 0) + 1 }), {}),
@@ -118,6 +140,16 @@ const ProductsView = ({ category = ALL, division = null, divisionParam = ALL }) 
   const changePage = (page) => {
     setCurrentPage(page);
     scrollToCatalog();
+  };
+
+  const changePageSize = (size) => {
+    setChosenPageSize(size);
+    setCurrentPage(1);
+    try {
+      window.localStorage.setItem(PAGE_SIZE_KEY, String(size));
+    } catch {
+      // Storage blocked: the choice still applies until the page is reloaded.
+    }
   };
 
   const clearFilters = () => {
@@ -305,12 +337,35 @@ const ProductsView = ({ category = ALL, division = null, divisionParam = ALL }) 
 
           <section className="min-w-0 flex-1" aria-label="Daftar produk">
             <div className="mb-5 flex min-h-[2rem] flex-wrap items-center justify-between gap-3">
-              <p className="text-sm text-gray-600" aria-live="polite">{resultSummary}</p>
-              {(selectedCategory !== ALL || searchQuery) && !loading && (
-                <button onClick={clearFilters} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-200/60 hover:text-gray-900">
-                  <XIcon className="h-3.5 w-3.5" weight="bold" aria-hidden="true" />
-                  Hapus filter
-                </button>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <p className="text-sm text-gray-600" aria-live="polite">{resultSummary}</p>
+                {(selectedCategory !== ALL || searchQuery) && !loading && (
+                  <button onClick={clearFilters} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-200/60 hover:text-gray-900">
+                    <XIcon className="h-3.5 w-3.5" weight="bold" aria-hidden="true" />
+                    Hapus filter
+                  </button>
+                )}
+              </div>
+
+              {/* Page size: only worth showing when there is more than one page at the smallest size. */}
+              {!loading && filteredProducts.length > PAGE_SIZES[0] && (
+                // Native select (same look as the contact form's), so phones open their own picker.
+                <div className="flex items-center gap-2">
+                  <label htmlFor="page-size" className="text-sm text-gray-600">Tampilkan</label>
+                  <div className="relative">
+                    <select
+                      id="page-size"
+                      value={itemsPerPage}
+                      onChange={(e) => changePageSize(Number(e.target.value))}
+                      className="flex h-9 appearance-none rounded-lg border border-input bg-white pl-3 pr-9 text-sm font-semibold tabular-nums text-gray-900 transition-[border-color,box-shadow] duration-200 hover:border-gray-400 focus-visible:border-brand-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-600/15"
+                    >
+                      {PAGE_SIZES.map((size) => (
+                        <option key={size} value={size}>{size}</option>
+                      ))}
+                    </select>
+                    <CaretDownIcon className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-500" weight="bold" aria-hidden="true" />
+                  </div>
+                </div>
               )}
             </div>
 
