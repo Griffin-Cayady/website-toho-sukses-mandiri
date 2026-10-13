@@ -1,10 +1,10 @@
 const UNIT_NAMES = { L: 'liter', kg: 'kg' };
 
-// Certifications that apply to the oil & lubricant products.
+// Certifications that apply to the oil & lubricant products. `id` picks the logo in certLogos.js.
 export const OIL_CERTIFICATIONS = [
-  { name: 'ISO 9001:2015', desc: 'Manajemen mutu' },
-  { name: 'ISO 14001:2015', desc: 'Manajemen lingkungan' },
-  { name: 'SNI', desc: 'Standar Nasional Indonesia' },
+  { id: 'iso9001', name: 'ISO 9001:2015', desc: 'Manajemen mutu' },
+  { id: 'iso14001', name: 'ISO 14001:2015', desc: 'Manajemen lingkungan' },
+  { id: 'sni', name: 'SNI', desc: 'Standar Nasional Indonesia' },
 ];
 
 // Oil ships in 200 L drums and 18–20 L pails.

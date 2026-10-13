@@ -1,7 +1,8 @@
 import React from 'react';
-import { SealCheckIcon } from '@phosphor-icons/react/dist/ssr';
 import Reveal from '@/components/Reveal';
 import { OIL_CERTIFICATIONS as certifications } from '@/lib/productInfo';
+// Inlined data URIs (imported only here, so other pages don't carry them).
+import * as certLogos from '@/lib/certLogos';
 
 // Trust band at the top of the oil category page (/kategori/?id=1): certifications and clients that apply to the oil & lubricant products.
 const clients = [
@@ -47,9 +48,14 @@ const OilHighlights = () => (
             delay={100 + i * 90}
             className="group flex flex-col items-start gap-3 rounded-2xl bg-white/[0.06] p-3 ring-1 ring-inset ring-white/15 transition-colors duration-300 hover:bg-white/[0.1] sm:flex-row sm:items-center sm:gap-4 sm:p-5 lg:p-6"
           >
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-sun/60 transition-transform duration-500 ease-out-expo group-hover:rotate-12 sm:h-14 sm:w-14">
-              <SealCheckIcon className="h-6 w-6 text-sun sm:h-7 sm:w-7" weight="fill" aria-hidden="true" />
-            </span>
+            {/* White-on-transparent logo sits straight on the dark band. The name beside it is the text label. */}
+            <img
+              src={certLogos[cert.id]}
+              alt=""
+              width={160}
+              height={160}
+              className="h-14 w-14 shrink-0 object-contain opacity-90 transition duration-500 ease-out-expo group-hover:scale-105 group-hover:opacity-100 sm:h-20 sm:w-20"
+            />
             <span className="min-w-0">
               <span className="block text-sm font-bold tabular-nums leading-tight sm:text-lg">{cert.name}</span>
               <span className="mt-0.5 block text-[11px] leading-tight text-white/65 sm:text-sm">{cert.desc}</span>
