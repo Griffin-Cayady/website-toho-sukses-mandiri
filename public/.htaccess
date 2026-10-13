@@ -1,0 +1,23 @@
+# Static export from `next build` (contents of out/). Each route is a folder with index.html.
+ErrorDocument 404 /404.html
+
+# The old per-category pages are now one page, /kategori/?id=<tbl_product_category.id>. Keeps old links and
+# search results working; QSA keeps any filter, e.g. /mesin/?kategori=Genset -> /kategori/?id=3&kategori=Genset.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^oli/?$ /kategori/?id=1 [R=301,L,QSA]
+  RewriteRule ^kawat-las/?$ /kategori/?id=2 [R=301,L,QSA]
+  RewriteRule ^mesin/?$ /kategori/?id=3 [R=301,L,QSA]
+</IfModule>
+
+<IfModule mod_headers.c>
+  # Never cache HTML so users always get the latest version after deploys
+  <If "%{REQUEST_URI} == '/' || %{REQUEST_URI} =~ m#(\.html|/)$#">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+  </If>
+
+  # Cache hashed assets (JS/CSS) aggressively — filenames change on each build
+  <If "%{REQUEST_URI} =~ m#^/_next/static/#">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </If>
+</IfModule>

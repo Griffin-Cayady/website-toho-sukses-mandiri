@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1200" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Foto kategori belum tersedia">
+  <defs>
+    <radialGradient id="bg" cx="0.68" cy="0.32" r="0.9">
+      <stop offset="0" stop-color="#0b5f0e"/>
+      <stop offset="0.55" stop-color="#0e4712"/>
+      <stop offset="1" stop-color="#072a09"/>
+    </radialGradient>
+    <pattern id="dots" width="28" height="28" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.6" fill="#ffffff" fill-opacity="0.07"/>
+    </pattern>
+  </defs>
+  <rect width="1600" height="1200" fill="url(#bg)"/>
+  <rect width="1600" height="1200" fill="url(#dots)"/>
+  <g fill="none" stroke="#ffffff" stroke-linejoin="round">
+    <path d="M1418.8 353.1L1487.2 370.6L1487.2 469.4L1418.8 486.9L1404.2 541.5L1454.6 590.8L1405.2 676.4L1337.3 657.3L1297.3 697.3L1316.4 765.2L1230.8 814.6L1181.5 764.2L1126.9 778.8L1109.4 847.2L1010.6 847.2L993.1 778.8L938.5 764.2L889.2 814.6L803.6 765.2L822.7 697.3L782.7 657.3L714.8 676.4L665.4 590.8L715.8 541.5L701.2 486.9L632.8 469.4L632.8 370.6L701.2 353.1L715.8 298.5L665.4 249.2L714.8 163.6L782.7 182.7L822.7 142.7L803.6 74.8L889.2 25.4L938.5 75.8L993.1 61.2L1010.6 -7.2L1109.4 -7.2L1126.9 61.2L1181.5 75.8L1230.8 25.4L1316.4 74.8L1297.3 142.7L1337.3 182.7L1405.2 163.6L1454.6 249.2L1404.2 298.5Z" stroke-opacity="0.08" stroke-width="6"/>
+    <circle cx="1060" cy="420" r="230" stroke-opacity="0.08" stroke-width="6"/>
+    <circle cx="1060" cy="420" r="95" stroke-opacity="0.06" stroke-width="6"/>
+  </g>
+  <circle cx="1060" cy="420" r="30" fill="#FFF101" fill-opacity="0.55"/>
+</svg>
