@@ -39,14 +39,14 @@ const OilHighlights = () => (
         </p>
       </Reveal>
 
-      {/* Certifications span the full content width */}
-      <ul className="mt-8 grid grid-cols-3 gap-2 sm:gap-4" aria-label="Sertifikasi">
+      {/* Certifications span the full content width: outlined cards, stacked on phones and tablets, side by side from lg. */}
+      <ul className="mt-6 grid gap-3 sm:mt-8 lg:grid-cols-3 lg:gap-4" aria-label="Sertifikasi">
         {certifications.map((cert, i) => (
           <Reveal
             as="li"
             key={cert.name}
             delay={100 + i * 90}
-            className="group flex flex-col items-start gap-3 rounded-2xl bg-white/[0.06] p-3 ring-1 ring-inset ring-white/15 transition-colors duration-300 hover:bg-white/[0.1] sm:flex-row sm:items-center sm:gap-4 sm:p-5 lg:p-6"
+            className="group flex items-center gap-4 rounded-2xl bg-white/[0.06] px-4 py-4 ring-1 ring-inset ring-white/15 transition-colors duration-300 hover:bg-white/[0.1] sm:px-5 lg:p-6"
           >
             {/* White-on-transparent logo sits straight on the dark band. The name beside it is the text label. */}
             <img
@@ -54,11 +54,11 @@ const OilHighlights = () => (
               alt=""
               width={160}
               height={160}
-              className="h-14 w-14 shrink-0 object-contain opacity-90 transition duration-500 ease-out-expo group-hover:scale-105 group-hover:opacity-100 sm:h-20 sm:w-20"
+              className="h-14 w-14 shrink-0 object-contain opacity-90 transition duration-500 ease-out-expo group-hover:scale-105 group-hover:opacity-100 lg:h-20 lg:w-20"
             />
             <span className="min-w-0">
-              <span className="block text-sm font-bold tabular-nums leading-tight sm:text-lg">{cert.name}</span>
-              <span className="mt-0.5 block text-[11px] leading-tight text-white/65 sm:text-sm">{cert.desc}</span>
+              <span className="block text-base font-bold tabular-nums leading-tight lg:text-lg">{cert.name}</span>
+              <span className="mt-1 block text-sm leading-snug text-white/65">{cert.desc}</span>
             </span>
           </Reveal>
         ))}
