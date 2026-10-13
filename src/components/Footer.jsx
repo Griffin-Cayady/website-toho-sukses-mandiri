@@ -32,8 +32,9 @@ const Footer = () => (
           </span>
         </Link>
 
+        {/* All four links stay on one line: spread across the width on phones (slightly smaller text), a tight row from sm. */}
         <nav aria-label="Footer">
-          <ul className="flex flex-wrap gap-x-7 gap-y-3 text-[15px] font-medium">
+          <ul className="flex justify-between gap-x-3 whitespace-nowrap text-sm font-medium sm:justify-start sm:gap-x-7 sm:text-[15px]">
             {footerLinks.map((link) => (
               <li key={link.href}>
                 <Link href={link.href} className={linkClass}>{link.name}</Link>
