@@ -13,16 +13,7 @@ export const DIVISIONS = [
     menuBlurb: 'Oli hidrolik, mesin diesel, gear, kompresor, dan oli kapal.',
     name: 'Oli & pelumas',
     catalogName: 'oli & pelumas',
-    headline: 'Pelumas industri yang menjaga mesin tetap jalan',
-    summary: 'Oli hidrolik, oli mesin diesel, oli gear, oli kompresor, dan pelumas khusus untuk pabrik, armada, dan kapal.',
-    intro: 'Pelumas kualitas Jepang yang diformulasikan untuk iklim tropis Indonesia. Tersedia dalam kemasan pail 18–20 liter dan drum 200 liter, dengan rekomendasi grade sesuai mesin Anda.',
     placeholder: IMAGES.placeholderOil,
-    tags: ['Oli hidrolik', 'Oli mesin diesel', 'Oli gear & transmisi', 'Oli kompresor', 'Oli kapal', 'Cutting coolant'],
-    highlights: [
-      { figure: '30%', text: 'Peningkatan efisiensi pada mesin industri' },
-      { figure: '2x', text: 'Interval perawatan lebih panjang untuk armada dan alat berat' },
-      { figure: '15%', text: 'Pengurangan konsumsi bahan bakar pada mesin diesel' },
-    ],
   },
   {
     categoryId: 2,
@@ -30,16 +21,7 @@ export const DIVISIONS = [
     menuBlurb: 'Kawat CO2/MIG, flux core, stainless, SAW, dan elektroda.',
     name: 'Kawat las',
     catalogName: 'kawat las',
-    headline: 'Kawat las untuk fabrikasi, galangan, dan perbaikan',
-    summary: 'Kawat las CO2/MIG, flux core, stainless, SAW, dan elektroda untuk fabrikasi baja, galangan kapal, dan perbaikan alat berat.',
-    intro: 'Kawat las baja karbon dan stainless untuk proses MIG/CO2, flux core, dan SAW, serta elektroda untuk las listrik. Kami bantu memilih tipe dan diameter yang cocok dengan material dan mesin las Anda.',
     placeholder: IMAGES.placeholderWire,
-    tags: ['CO2 / MIG', 'Flux core', 'Stainless', 'Submerged arc (SAW)', 'Elektroda'],
-    highlights: [
-      { figure: 'Ø0.8–3.2', text: 'Rentang diameter kawat untuk pekerjaan tipis hingga tebal' },
-      { figure: '5–25 kg', text: 'Kemasan spool dan dus sesuai skala produksi' },
-      { figure: '2 jenis', text: 'Baja karbon dan stainless untuk berbagai material' },
-    ],
   },
   {
     categoryId: 3,
@@ -47,24 +29,13 @@ export const DIVISIONS = [
     menuBlurb: 'Mesin pertanian, pompa air, mesin kapal, genset, dan kompresor.',
     name: 'Mesin & peralatan',
     catalogName: 'mesin & peralatan',
-    headline: 'Mesin untuk lahan, laut, dan lantai pabrik',
-    summary: 'Hand traktor, pompa air, mesin kapal, genset, kompresor, dan mesin las untuk pertanian, kelautan, dan kebutuhan pabrik.',
-    intro: 'Mesin penggerak dan peralatan kerja untuk tiga sektor: pertanian, kelautan, dan kebutuhan pabrik. Ceritakan kebutuhan daya dan lokasi kerja Anda, dan kami siapkan spesifikasi yang sesuai.',
     placeholder: IMAGES.placeholderMachine,
-    tags: ['Mesin pertanian', 'Pompa air', 'Mesin kelautan', 'Genset', 'Kompresor', 'Mesin las'],
-    highlights: [
-      { figure: '3 sektor', text: 'Pertanian, kelautan, dan kebutuhan pabrik' },
-      { figure: 'Diesel & bensin', text: 'Pilihan penggerak sesuai lokasi dan bahan bakar' },
-      { figure: '1 kontak', text: 'Mesin, oli, dan kawat las dari satu pemasok' },
-    ],
   },
 ];
 
 // Look of categories added in the database that have no designed page yet.
 const GENERIC_DIVISION = {
   placeholder: IMAGES.productPlaceholder,
-  tags: [],
-  highlights: [],
 };
 
 // Every category shares one page, /kategori/, which reads the category id from ?id=.

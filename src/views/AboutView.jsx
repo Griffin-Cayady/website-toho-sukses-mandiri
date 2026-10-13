@@ -6,19 +6,15 @@ import {
   TruckIcon,
   WrenchIcon,
   CalendarCheckIcon,
-  BuildingsIcon,
   ThumbsUpIcon,
   HeadsetIcon,
-  FactoryIcon,
-  AnchorIcon,
-  PlantIcon,
 } from '@phosphor-icons/react/dist/ssr';
 import { Button } from '@/components/ui/button';
 import Reveal from '@/components/Reveal';
 import CountUp from '@/components/CountUp';
 import { COMPANY, YEARS_IN_BUSINESS } from '@/lib/company';
 import { IMAGES } from '@/lib/images';
-import CategoryList from '@/components/CategoryList';
+import CategoryShowcase from '@/components/CategoryShowcase';
 
 const benefits = [
   { icon: SealCheckIcon, text: 'Produk asli dari pemasok resmi' },
@@ -26,17 +22,8 @@ const benefits = [
   { icon: TruckIcon, text: 'Pengiriman tepat waktu' },
 ];
 
-const customers = [
-  { icon: FactoryIcon, name: 'Pabrik' },
-  { icon: WrenchIcon, name: 'Bengkel fabrikasi' },
-  { icon: AnchorIcon, name: 'Galangan kapal' },
-  { icon: TruckIcon, name: 'Armada logistik' },
-  { icon: PlantIcon, name: 'Usaha pertanian' },
-];
-
 const stats = [
   { icon: CalendarCheckIcon, number: `${YEARS_IN_BUSINESS}+`, label: 'Tahun pengalaman' },
-  { icon: BuildingsIcon, number: '100+', label: 'Perusahaan industri' },
   { icon: ThumbsUpIcon, number: '98%', label: 'Tingkat kepuasan' },
   { icon: HeadsetIcon, number: '24/7', label: 'Layanan pelanggan' },
 ];
@@ -75,8 +62,8 @@ const AboutView = () => {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }} />
 
-      {/* Hero: green-tinted photo background, content anchored to the bottom */}
-      <section className="relative isolate flex min-h-[calc(86dvh-72px)] flex-col justify-end overflow-hidden bg-brand-950">
+      {/* Hero: green-tinted photo background with the intro, benefits and company figures in one block */}
+      <section className="relative isolate flex flex-col justify-end overflow-hidden bg-brand-950 md:min-h-[720px]">
         <img
           src={IMAGES.aboutHero}
           alt="Gudang distribusi dengan rak penyimpanan bertingkat"
@@ -84,23 +71,34 @@ const AboutView = () => {
           fetchPriority="high"
         />
         <div className="absolute inset-0 -z-10 bg-brand-800/40 mix-blend-multiply" aria-hidden="true" />
-        <div className="absolute inset-0 -z-10 bg-gradient-to-t from-brand-950 via-brand-950/70 to-brand-950/0" aria-hidden="true" />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-t from-brand-950 via-brand-950/75 to-brand-950/10" aria-hidden="true" />
+        <div className="bg-dots-light pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-2/5 opacity-40 [mask-image:linear-gradient(to_top,black,transparent)]" aria-hidden="true" />
 
-        <div className="mx-auto w-full max-w-7xl px-4 pt-32 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-7xl px-4 pt-28 sm:px-6 md:pt-40 lg:px-8">
           <Reveal>
-            <p className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-brand-200">
+            <p className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-brand-200">
               <span className="h-2 w-2 rounded-full bg-sun" aria-hidden="true" />
               Tentang {COMPANY.name}
             </p>
-            <h1 className="max-w-4xl text-[2.6rem] font-extrabold leading-[1.03] tracking-[-0.035em] text-white sm:text-6xl lg:text-7xl">
+            <h1 className="max-w-3xl text-[2.4rem] font-extrabold leading-[1.04] tracking-[-0.035em] text-white sm:text-5xl lg:text-6xl">
               Satu mitra untuk <span className="text-brand-300">kebutuhan industri Anda.</span>
             </h1>
           </Reveal>
 
-          <Reveal delay={100} className="mt-8 grid gap-8 lg:grid-cols-12 lg:items-end">
-            <p className="max-w-xl text-lg leading-relaxed text-white/80 lg:col-span-7">
-              Dari Jakarta, kami memasok lebih dari 100 perusahaan di sektor pertanian, kelautan, dan kebutuhan pabrik.
-            </p>
+          <Reveal delay={100} className="mt-7 grid gap-7 lg:grid-cols-12 lg:items-end">
+            <div className="lg:col-span-7">
+              <p className="max-w-xl text-lg leading-relaxed text-white/80">
+                Dari Jakarta, kami memasok lebih dari 100 perusahaan di sektor pertanian, kelautan, dan kebutuhan pabrik.
+              </p>
+              <ul className="mt-5 flex flex-wrap gap-x-6 gap-y-3">
+                {benefits.map((benefit) => (
+                  <li key={benefit.text} className="flex items-center gap-2">
+                    <benefit.icon className="h-5 w-5 shrink-0 text-sun" weight="duotone" aria-hidden="true" />
+                    <span className="text-[15px] font-semibold text-white">{benefit.text}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
             <div className="flex flex-wrap items-center gap-x-7 gap-y-4 lg:col-span-5 lg:justify-end">
               <Button asChild variant="inverse" size="xl">
                 <Link href="/#contact-us">
@@ -115,68 +113,39 @@ const AboutView = () => {
             </div>
           </Reveal>
 
-          <Reveal delay={180}>
-            <ul className="mt-14 grid grid-cols-1 gap-4 border-t border-white/15 py-7 sm:grid-cols-3 sm:gap-0 sm:divide-x sm:divide-white/15 md:mt-20">
-              {benefits.map((benefit) => (
-                <li key={benefit.text} className="flex items-center gap-3 sm:px-6 sm:first:pl-0">
-                  <benefit.icon className="h-6 w-6 shrink-0 text-sun" weight="duotone" aria-hidden="true" />
-                  <span className="text-[15px] font-semibold text-white">{benefit.text}</span>
-                </li>
-              ))}
-            </ul>
-          </Reveal>
+          {/* Company figures along the bottom edge */}
+          <dl aria-label="Angka perusahaan" className="mt-12 grid grid-cols-3 gap-x-4 border-t border-white/15 py-7 md:mt-20 md:gap-0 md:divide-x md:divide-white/15 md:py-9">
+            {stats.map((stat, i) => (
+              <Reveal key={stat.label} delay={180 + i * 80} className="flex flex-col-reverse gap-1 md:px-8 md:first:pl-0">
+                <dt className="flex items-center gap-2 text-sm font-medium text-white/70">
+                  <stat.icon className="h-4 w-4 shrink-0 text-sun" weight="duotone" aria-hidden="true" />
+                  {stat.label}
+                </dt>
+                <dd>
+                  <CountUp value={stat.number} className="text-3xl font-extrabold tabular-nums leading-none tracking-tight text-white md:text-4xl" />
+                </dd>
+              </Reveal>
+            ))}
+          </dl>
         </div>
       </section>
 
-      {/* Stats: one compact row */}
-      <section id="angka" aria-label="Angka perusahaan" className="relative bg-brand-700">
-        <div className="bg-dots-light pointer-events-none absolute inset-0 opacity-50" aria-hidden="true" />
-        <dl className="relative mx-auto grid max-w-7xl grid-cols-2 gap-x-4 gap-y-6 px-4 py-8 sm:px-6 md:grid-cols-4 md:gap-0 md:divide-x md:divide-white/15 md:py-10 lg:px-8">
-          {stats.map((stat, i) => (
-            <Reveal key={stat.label} delay={i * 80} className="flex items-center gap-3 md:justify-center md:px-4">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10 ring-1 ring-inset ring-white/15">
-                <stat.icon className="h-5 w-5 text-sun" weight="duotone" aria-hidden="true" />
-              </span>
-              <div className="flex flex-col-reverse">
-                <dt className="text-xs font-medium text-white/80 sm:text-sm">{stat.label}</dt>
-                <dd>
-                  <CountUp value={stat.number} className="text-2xl font-extrabold tabular-nums leading-tight tracking-tight text-white sm:text-3xl" />
-                </dd>
-              </div>
-            </Reveal>
-          ))}
-        </dl>
-      </section>
-
-      {/* Company story: short intro + who we serve, categories as compact cards */}
-      <section aria-labelledby="story-heading" className="py-20 md:py-24">
-        <div className="mx-auto grid max-w-7xl grid-cols-1 gap-12 px-4 sm:px-6 lg:grid-cols-12 lg:gap-16 lg:px-8">
-          <Reveal className="lg:col-span-5">
-            <p className="mb-4 text-sm font-semibold text-brand-700">Berdiri sejak {COMPANY.foundedYear}</p>
-            <h2 id="story-heading" className="text-3xl font-extrabold leading-[1.1] tracking-tight text-gray-900 [text-wrap:balance] md:text-4xl">
-              Mitra pasokan untuk pabrik, galangan, dan lahan pertanian
-            </h2>
-            <p className="mt-5 max-w-md text-[17px] leading-relaxed text-gray-600">
-              Semua kebutuhan dari satu pemasok, jadi Anda cukup berurusan dengan satu kontak.
-            </p>
-
-            <h3 className="mb-3 mt-8 text-sm font-semibold text-gray-900">Siapa yang kami layani</h3>
-            <ul className="flex flex-wrap gap-2">
-              {customers.map((customer) => (
-                <li key={customer.name} className="inline-flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 text-sm font-medium text-gray-800 ring-1 ring-gray-200">
-                  <customer.icon className="h-4 w-4 text-brand-700" weight="duotone" aria-hidden="true" />
-                  {customer.name}
-                </li>
-              ))}
-            </ul>
+      {/* Company story: short intro + who we serve, then the categories (same showcase as the home page) */}
+      <section aria-labelledby="story-heading" className="pb-24 pt-20 md:pb-28 md:pt-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <Reveal className="mb-10 grid grid-cols-1 gap-8 md:mb-14 lg:grid-cols-12 lg:items-end lg:gap-16">
+            <div className="lg:col-span-7">
+              <p className="mb-4 text-sm font-semibold text-brand-700">Berdiri sejak {COMPANY.foundedYear}</p>
+              <h2 id="story-heading" className="text-3xl font-extrabold leading-[1.05] tracking-tight text-gray-900 [text-wrap:balance] md:text-5xl">
+                Mitra pasokan untuk pabrik, galangan, dan lahan pertanian
+              </h2>
+              <p className="mt-5 max-w-md text-[17px] leading-relaxed text-gray-600">
+                Semua kebutuhan dari satu pemasok, jadi Anda cukup berurusan dengan satu kontak.
+              </p>
+            </div>
           </Reveal>
 
-          <div className="lg:col-span-7">
-            <Reveal>
-              <h3 className="mb-4 text-sm font-semibold text-gray-900">Kategori produk</h3>
-            </Reveal>
-            <CategoryList />
-          </div>
+          <CategoryShowcase />
         </div>
       </section>
 

@@ -7,3 +7,15 @@ next-env.d.ts
 .tmp/
 token.json
 credentials.json
+.env*
+!.env.local.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+.vercel/
+.claude/settings.local.json
