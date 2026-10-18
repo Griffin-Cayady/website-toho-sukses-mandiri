@@ -18,7 +18,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import ProductCard from '@/components/ProductCard';
 import CatalogPagination from '@/components/CatalogPagination';
-import { useSupabase } from '@/contexts/SupabaseContext.jsx';
+import { useCatalog } from '@/contexts/CatalogContext.jsx';
 import { cn } from '@/lib/utils';
 import { OIL_BROCHURE_URL } from '@/lib/company';
 
@@ -50,7 +50,7 @@ const subscribeToStorage = (onChange) => {
  */
 const ProductsView = ({ category = ALL, division = null, divisionParam = ALL }) => {
   const { toast } = useToast();
-  const { products, divisions, divisionBySlug, loading, error, refetch } = useSupabase();
+  const { products, divisions, divisionBySlug, loading, error, refetch } = useCatalog();
 
   const locked = Boolean(division);
   const activeDivision = locked ? division : divisionBySlug[divisionParam] ? divisionParam : ALL;

@@ -1,0 +1,5 @@
+# Only the endpoints are reachable; helper files (starting with _) are not.
+<FilesMatch "^_">
+  Require all denied
+</FilesMatch>
+Options -Indexes

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { COMPANY } from '@/lib/company';
 import { isDivisionPage } from '@/lib/divisions';
-import { useSupabase } from '@/contexts/SupabaseContext.jsx';
+import { useCatalog } from '@/contexts/CatalogContext.jsx';
 
 // "Produk" opens a menu with the product categories from the database (see ProductsMenu below).
 const navItems = [
@@ -37,7 +37,7 @@ const tileDelay = (i) => `${80 + Math.min(i, 8) * 35}ms`;
  * Escape, clicking outside, or moving focus away closes it.
  */
 const ProductsMenu = ({ item, counts, active, currentPath, categoryParam }) => {
-  const { products, loading } = useSupabase();
+  const { products, loading } = useCatalog();
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
   const buttonRef = useRef(null);
@@ -226,7 +226,7 @@ const Navbar = ({ categoryParam = null }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
-  const { products, divisions } = useSupabase();
+  const { products, divisions } = useCatalog();
 
   // Active products per tbl_product_category.id.
   const counts = useMemo(

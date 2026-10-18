@@ -78,26 +78,7 @@ export function useToast() {
     return unsubscribe
   }, [])
   
-  useEffect(() => {
-    const timeouts = []
-
-    state.toasts.forEach((toast) => {
-      if (toast.duration === Infinity) {
-        return
-      }
-
-      const timeout = setTimeout(() => {
-        toast.dismiss()
-      }, toast.duration || 5000)
-
-      timeouts.push(timeout)
-    })
-
-    return () => {
-      timeouts.forEach((timeout) => clearTimeout(timeout))
-    }
-  }, [state.toasts])
-
+  // Closing after `duration` is left to Radix (see Toaster), which pauses the countdown on hover and focus.
   return {
     toast,
     toasts: state.toasts,

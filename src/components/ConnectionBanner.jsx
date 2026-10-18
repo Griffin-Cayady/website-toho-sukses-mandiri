@@ -2,10 +2,10 @@
 
 import React, { useState } from 'react';
 import { WarningIcon, XIcon } from '@phosphor-icons/react';
-import { useSupabase } from '@/contexts/SupabaseContext.jsx';
+import { useCatalog } from '@/contexts/CatalogContext.jsx';
 
 const ConnectionBanner = () => {
-  const { error } = useSupabase();
+  const { error } = useCatalog();
   const [showBanner, setShowBanner] = useState(true);
 
   if (!error || !showBanner) return null;

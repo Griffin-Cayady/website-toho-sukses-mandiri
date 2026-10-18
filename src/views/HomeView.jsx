@@ -26,8 +26,8 @@ import { useToast } from '@/components/ui/use-toast';
 import ProductCard from '@/components/ProductCard';
 import Reveal from '@/components/Reveal';
 import CategoryShowcase from '@/components/CategoryShowcase';
-import { useSupabase } from '@/contexts/SupabaseContext.jsx';
-import { supabase, logSupabaseError, TABLES } from '@/lib/supabase';
+import { useCatalog } from '@/contexts/CatalogContext.jsx';
+import { apiPost, logApiError } from '@/lib/api';
 import { COMPANY } from '@/lib/company';
 import { IMAGES } from '@/lib/images';
 import { SECTORS } from '@/lib/divisions';
@@ -108,7 +108,7 @@ const FormField = ({ id, label, error, children }) => (
 
 const HomeView = () => {
   const { toast } = useToast();
-  const { products, divisions, divisionBySlug, loading } = useSupabase();
+  const { products, divisions, divisionBySlug, loading } = useCatalog();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
   const [submitted, setSubmitted] = useState(false);
@@ -188,8 +188,7 @@ const HomeView = () => {
 
     setIsSubmitting(true);
     try {
-      const { error: insertError } = await supabase.from(TABLES.contactSubmissions).insert([data]);
-      if (insertError) throw insertError;
+      await apiPost('contact.php', data);
 
       toast({
         title: 'Pesan terkirim',
@@ -198,7 +197,7 @@ const HomeView = () => {
       setSubmitted(true);
       e.target.reset();
     } catch (err) {
-      logSupabaseError('handleContactSubmit', err);
+      logApiError('handleContactSubmit', err);
       setSubmitError('Pesan belum terkirim karena server tidak dapat dihubungi. Silakan coba lagi, atau hubungi kami langsung lewat telepon atau email.');
     } finally {
       setIsSubmitting(false);

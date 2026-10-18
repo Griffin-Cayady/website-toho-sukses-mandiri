@@ -9,7 +9,7 @@ import {
   WhatsappLogoIcon,
   XIcon,
 } from '@phosphor-icons/react';
-import { useSupabase } from '@/contexts/SupabaseContext.jsx';
+import { useCatalog } from '@/contexts/CatalogContext.jsx';
 import { whatsappLink } from '@/lib/company';
 import { packLine, packName, productInfo, seriesName } from '@/lib/productInfo';
 import { cn } from '@/lib/utils';
@@ -118,7 +118,7 @@ const SectionTitle = ({ children }) => <h3 className="text-sm font-semibold text
 // `renderQuote(product, className, onBeforeQuote)` renders the card's quote button for whichever product is shown.
 const ProductDetailDialog = ({ product: initialProduct, onClose, renderQuote }) => {
   const dialogRef = useRef(null);
-  const { products, divisionOf } = useSupabase();
+  const { products, divisionOf } = useCatalog();
   const [product, setProduct] = useState(initialProduct);
 
   const division = divisionOf(product);

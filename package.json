@@ -5,15 +5,16 @@
   "scripts": {
     "dev": "next dev --port 3000",
     "build": "next build --webpack",
+    "postbuild": "node -e \"require('fs').rmSync('out/TSM_DB_Dev', { recursive: true, force: true })\"",
     "start": "npx serve@14 out -p 3000",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "api": "php -d upload_max_filesize=6M -d post_max_size=8M -S localhost:8000 -t public"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
     "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-toast": "^1.2.14",
-    "@supabase/supabase-js": "2.30.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "next": "^16.4.0",

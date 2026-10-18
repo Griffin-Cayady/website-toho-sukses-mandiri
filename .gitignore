@@ -19,3 +19,10 @@ npm-debug.log*
 Thumbs.db
 .vercel/
 .claude/settings.local.json
+
+# MySQL credentials for the PHP API (copy of toho-db-config.example.php)
+toho-db-config.php
+
+# Back office: photos uploaded while testing locally, and failed-login counters
+public/TSM_DB_Dev/
+login-attempts/

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ArrowRightIcon, CaretDownIcon } from '@phosphor-icons/react';
 import Reveal from '@/components/Reveal';
 import IndexScrollbar from '@/components/IndexScrollbar';
-import { useSupabase } from '@/contexts/SupabaseContext.jsx';
+import { useCatalog } from '@/contexts/CatalogContext.jsx';
 import { cn } from '@/lib/utils';
 
 // Category index rows (wide screens): every row has the same height, and the list shows at most this many before it
@@ -18,7 +18,7 @@ const CATEGORY_ROW_REM = 5.5;
  * that follows the hovered or focused row of the numbered index beside it. Small screens: a swipeable row of photo cards.
  */
 const CategoryShowcase = () => {
-  const { products, divisions, loading } = useSupabase();
+  const { products, divisions, loading } = useCatalog();
 
   // Active products per tbl_product_category.id.
   const categoryCounts = useMemo(

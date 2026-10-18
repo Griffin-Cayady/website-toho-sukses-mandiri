@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ArrowRightIcon } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import ProductDetailDialog from '@/components/ProductDetailDialog';
-import { useSupabase } from '@/contexts/SupabaseContext.jsx';
+import { useCatalog } from '@/contexts/CatalogContext.jsx';
 import { packBadge, packLine } from '@/lib/productInfo';
 
 // Without `onQuoteRequest` the quote button links to the home page contact form, which reads
@@ -13,7 +13,7 @@ import { packBadge, packLine } from '@/lib/productInfo';
 // Clicking the photo or name opens the product detail pop-up.
 const ProductCard = ({ product, imageAlt, showDivision = false, onQuoteRequest }) => {
   const [detailOpen, setDetailOpen] = useState(false);
-  const { divisionOf } = useSupabase();
+  const { divisionOf } = useCatalog();
   const division = divisionOf(product);
 
   // Works for any product so the detail pop-up can quote whichever size or related item it is showing.

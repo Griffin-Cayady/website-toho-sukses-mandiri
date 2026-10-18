@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import ProductsView from '@/views/ProductsView';
 import CategoryNotFound from '@/components/CategoryNotFound';
 import OilHighlights from '@/components/OilHighlights';
-import { useSupabase } from '@/contexts/SupabaseContext.jsx';
+import { useCatalog } from '@/contexts/CatalogContext.jsx';
 import { OIL_CATEGORY_ID } from '@/lib/divisions';
 
 const ALL = 'All';
@@ -13,7 +13,7 @@ const ALL = 'All';
 // Body of /kategori/?id=<id>, the one page for every category: the catalogue locked to that category.
 // `id` is undefined while the URL has not been read yet (prerendered HTML), and null when ?id= is missing.
 const CategoryView = ({ id, category = ALL }) => {
-  const { divisions, loading } = useSupabase();
+  const { divisions, loading } = useCatalog();
   const division = id ? divisions.find((d) => String(d.categoryId) === id) : null;
 
   useEffect(() => {

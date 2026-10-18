@@ -18,7 +18,7 @@ const sections = [
   },
   {
     title: 'Penyimpanan data',
-    body: 'Pesan dari formulir kontak disimpan di layanan database pihak ketiga (Supabase) yang kami gunakan untuk mengelola permintaan pelanggan. Akses ke data ini dibatasi untuk tim kami.',
+    body: 'Pesan dari formulir kontak disimpan di database pada server hosting kami (Hostinger) yang kami gunakan untuk mengelola permintaan pelanggan. Akses ke data ini dibatasi untuk tim kami.',
   },
   {
     title: 'Hak Anda',

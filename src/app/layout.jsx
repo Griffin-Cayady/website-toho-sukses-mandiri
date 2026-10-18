@@ -1,12 +1,10 @@
 import { Plus_Jakarta_Sans } from 'next/font/google';
-import { Suspense } from 'react';
-import Navbar, { NavbarFromUrl } from '@/components/Navbar';
-import Footer from '@/components/Footer';
-import ConnectionBanner from '@/components/ConnectionBanner';
 import { Toaster } from '@/components/ui/toaster';
-import { SupabaseProvider } from '@/contexts/SupabaseContext.jsx';
 import { IMAGES } from '@/lib/images';
 import './globals.css';
+
+// Product photos may live on another host (e.g. a storage bucket); warm up that connection early.
+const IMAGE_ORIGIN = /^https?:\/\//.test(process.env.NEXT_PUBLIC_IMAGE_BASE_URL || '') ? new URL(process.env.NEXT_PUBLIC_IMAGE_BASE_URL).origin : null;
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -48,7 +46,7 @@ export default function RootLayout({ children }) {
           <style>{NO_JS_STYLE}</style>
         </noscript>
         <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="" />
-        <link rel="preconnect" href={process.env.NEXT_PUBLIC_SUPABASE_URL} crossOrigin="" />
+        {IMAGE_ORIGIN && <link rel="preconnect" href={IMAGE_ORIGIN} crossOrigin="" />}
       </head>
       <body className="font-sans bg-white text-gray-900">
         <a
@@ -57,17 +55,9 @@ export default function RootLayout({ children }) {
         >
           Langsung ke konten utama
         </a>
-        <SupabaseProvider>
-          <ConnectionBanner />
-          <div className="min-h-[100dvh] flex flex-col">
-            <Suspense fallback={<Navbar />}>
-              <NavbarFromUrl />
-            </Suspense>
-            <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-none">{children}</main>
-            <Footer />
-          </div>
-          <Toaster />
-        </SupabaseProvider>
+        {/* Public pages get their navbar and footer from (site)/layout.jsx; the back office has its own frame. */}
+        {children}
+        <Toaster />
       </body>
     </html>
   );
