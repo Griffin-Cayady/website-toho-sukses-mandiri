@@ -18,7 +18,7 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 .vercel/
-.claude/settings.local.json
+.claude/
 
 # MySQL credentials for the PHP API (copy of toho-db-config.example.php)
 toho-db-config.php
