@@ -3,7 +3,7 @@
 // with `npm run api` running alongside.
 export const API_URL = (process.env.NEXT_PUBLIC_API_URL || '/api').replace(/\/$/, '');
 
-// Product and category photos: a file name in the database is resolved against this folder or bucket URL.
+// Product and category photos: a file name in the database is resolved against this folder URL.
 const IMAGE_BASE_URL = (process.env.NEXT_PUBLIC_IMAGE_BASE_URL || '').replace(/\/$/, '');
 
 const request = async (endpoint, init) => {

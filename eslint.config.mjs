@@ -5,7 +5,7 @@ const eslintConfig = [
 	...nextCoreWebVitals,
 	{
 		rules: {
-			// Images are served from external CDNs / Supabase storage and the site is a static export,
+			// Images are served from the TSM_DB_Dev upload folder and the site is a static export,
 			// so next/image optimization isn't available.
 			'@next/next/no-img-element': 'off',
 		},

@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
 	// Static export to `out/` so the site keeps running on plain Apache/Hostinger hosting.
-	// All Supabase calls happen in the browser, so no Node server is needed.
+	// Data comes from the PHP API in public/api/, so no Node server is needed.
 	output: 'export',
 	// Emits `/products/index.html` instead of `/products.html`, which Apache serves without rewrites.
 	trailingSlash: true,
