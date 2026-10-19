@@ -1,6 +1,11 @@
 # Static export from `next build` (contents of out/). Each route is a folder with index.html.
 ErrorDocument 404 /404.html
 
+# public_html/.env holds the database password (read by api/_bootstrap.php). Never serve it, or any other dotfile.
+<FilesMatch "^\.">
+  Require all denied
+</FilesMatch>
+
 # The old per-category pages are now one page, /kategori/?id=<tbl_product_category.id>. Keeps old links and
 # search results working; QSA keeps any filter, e.g. /mesin/?kategori=Genset -> /kategori/?id=3&kategori=Genset.
 <IfModule mod_rewrite.c>

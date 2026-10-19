@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --port 3000",
     "build": "next build --webpack",
-    "postbuild": "node -e \"require('fs').rmSync('out/TSM_DB_Dev', { recursive: true, force: true })\"",
+    "postbuild": "node -e \"require('fs').rmSync('out/TSM_DB_Prod', { recursive: true, force: true })\"",
     "start": "npx serve@14 out -p 3000",
     "lint": "eslint .",
     "api": "php -d upload_max_filesize=6M -d post_max_size=8M -S localhost:8000 -t public"

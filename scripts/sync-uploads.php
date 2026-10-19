@@ -1,11 +1,11 @@
 <?php
-// Sends every photo in public/TSM_DB_Dev to the FTP mirror set in toho-db-config.php ('ftp'), e.g. photos uploaded
+// Sends every photo in public/TSM_DB_Prod to the FTP mirror set in toho-db-config.php ('ftp'), e.g. photos uploaded
 // before the mirror was set up. Files already on Hostinger are skipped. Run from the project root:
 //   php scripts/sync-uploads.php
 
 declare(strict_types=1);
 
-const UPLOAD_DIR = __DIR__ . '/../public/TSM_DB_Dev';
+const UPLOAD_DIR = __DIR__ . '/../public/TSM_DB_Prod';
 $config = require __DIR__ . '/../toho-db-config.php';
 require __DIR__ . '/../public/api/admin/_uploads.php';
 
