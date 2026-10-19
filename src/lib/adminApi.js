@@ -64,6 +64,7 @@ export const adminApi = {
   changePassword: (current, next) => request('password.php', { method: 'POST', body: { current, new: next } }),
   products: resource('products.php', 'product', 'products'),
   categories: resource('categories.php', 'category', 'categories'),
+  merks: resource('merks.php', 'merk', 'merks'),
   // Contact form messages (tbl_contact_submissions): read and delete only.
   messages: {
     list: () => request('messages.php').then((d) => d.messages),

@@ -13,6 +13,7 @@ import {
   PackageIcon,
   SignOutIcon,
   SquaresFourIcon,
+  TagIcon,
   XIcon,
 } from '@phosphor-icons/react';
 import { useAdmin } from '@/contexts/AdminContext.jsx';
@@ -28,6 +29,7 @@ const NAV_GROUPS = [
     items: [
       { href: '/admin-back-office/produk/', label: 'Produk', icon: PackageIcon },
       { href: '/admin-back-office/kategori/', label: 'Kategori', icon: SquaresFourIcon },
+      { href: '/admin-back-office/merk/', label: 'Merk', icon: TagIcon },
     ],
   },
   {

@@ -3,7 +3,7 @@
 //   GET            -> { products: [...] }   every product, active or not
 //   GET ?id=       -> { product }
 //   POST           -> create from JSON      PUT ?id= -> update      DELETE ?id= -> delete (and its photo files)
-// JSON body: product_name, product_category, product_type_1, product_size, product_description,
+// JSON body: product_name, product_category, product_merk (optional), product_type_1, product_size, product_description,
 //            product_best_selling, product_status, images (up to 5 paths; the first is the card photo)
 
 declare(strict_types=1);
@@ -13,7 +13,7 @@ require __DIR__ . '/_uploads.php';
 const IMAGE_COLUMNS = ['product_image_1', 'product_image_2', 'product_image_3', 'product_image_4', 'product_image_5'];
 // user_update holds a tbl_user.user_code (unique), so the join adds at most one row: that user's name.
 // user_update_name is NULL when nothing matches (e.g. older rows that stored a username or 001SYSTEMS).
-const PRODUCT_SELECT = 'SELECT p.id, p.product_name, p.product_category, p.product_type_1, p.product_size, p.product_description,
+const PRODUCT_SELECT = 'SELECT p.id, p.product_name, p.product_category, p.product_merk, p.product_type_1, p.product_size, p.product_description,
     p.product_best_selling, p.product_status, p.product_image_1, p.product_image_2, p.product_image_3, p.product_image_4,
     p.product_image_5, p.user_update, p.last_update, u.name AS user_update_name
     FROM tbl_master_product p
@@ -30,6 +30,7 @@ function product_out(array $row): array
     return [
         'id' => (int) $row['id'],
         'product_category' => $row['product_category'] === null ? null : (int) $row['product_category'],
+        'product_merk' => $row['product_merk'] === null ? null : (int) $row['product_merk'],
         'product_best_selling' => (int) $row['product_best_selling'] === 1,
         'product_status' => (int) $row['product_status'] === 1,
         'images' => $images,
@@ -63,6 +64,13 @@ $currentImages = $existing ? array_values(array_filter(array_map(fn ($c) => $exi
 if ($method === 'DELETE') {
     db()->prepare('DELETE FROM tbl_master_product WHERE id = ?')->execute([$existing['id']]);
     array_map('delete_upload', $currentImages);
+    // Pulls MySQL's counter back to highest id + 1, so rows added in phpMyAdmin don't skip numbers either.
+    // Best effort: the back office picks its own ids, so a failure here changes nothing for it.
+    try {
+        db()->exec('ALTER TABLE tbl_master_product AUTO_INCREMENT = 1');
+    } catch (PDOException $e) {
+        error_log('[toho-api] AUTO_INCREMENT reset failed: ' . $e->getMessage());
+    }
     send_json(200, ['ok' => true]);
 }
 
@@ -78,6 +86,20 @@ $data = [
     'product_status' => flag_field($input, 'product_status'),
 ];
 
+// product_merk: a tbl_master_merk.id, or null/'' for "no merk". Left out of the request = keep the current one.
+if (array_key_exists('product_merk', $input)) {
+    $merk = $input['product_merk'];
+    if ($merk === null || $merk === '') {
+        $data['product_merk'] = null;
+    } else {
+        $merk = filter_var($merk, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        $merkExists = db()->prepare('SELECT 1 FROM tbl_master_merk WHERE id = ?');
+        $merkExists->execute([$merk === false ? 0 : $merk]);
+        if ($merk === false || !$merkExists->fetchColumn()) $errors['product_merk'] = 'Merk ini sudah tidak ada. Pilih merk lain.';
+        $data['product_merk'] = $merk === false ? null : $merk;
+    }
+}
+
 $category = filter_var($input['product_category'] ?? null, FILTER_VALIDATE_INT);
 $categoryExists = db()->prepare('SELECT 1 FROM tbl_product_category WHERE id = ?');
 $categoryExists->execute([$category === false ? 0 : $category]);
@@ -92,10 +114,19 @@ if ($errors) send_json(422, ['error' => 'Periksa kembali isian Anda.', 'fields' 
 $data['user_update'] = user_update_value($admin);
 $columns = array_keys($data);
 if ($method === 'POST') {
-    $sql = 'INSERT INTO tbl_master_product (' . implode(', ', $columns) . ', last_update) VALUES ('
+    // The new id is the lowest unused number, like categories.php: with 1–107 and 101–105 deleted, the next
+    // product gets 101. FOR UPDATE locks the ids, so two admins saving at once wait instead of picking the same one.
+    db()->beginTransaction();
+    $taken = db()->query('SELECT id FROM tbl_master_product ORDER BY id FOR UPDATE')->fetchAll(PDO::FETCH_COLUMN);
+    $id = 1;
+    foreach ($taken as $used) {
+        if ((int) $used !== $id) break;
+        $id++;
+    }
+    $sql = 'INSERT INTO tbl_master_product (id, ' . implode(', ', $columns) . ', last_update) VALUES (?, '
         . implode(', ', array_fill(0, count($columns), '?')) . ', NOW())';
-    db()->prepare($sql)->execute(array_values($data));
-    $id = (int) db()->lastInsertId();
+    db()->prepare($sql)->execute([$id, ...array_values($data)]);
+    db()->commit();
 } else {
     $sql = 'UPDATE tbl_master_product SET ' . implode(', ', array_map(fn ($c) => "$c = ?", $columns)) . ', last_update = NOW() WHERE id = ?';
     db()->prepare($sql)->execute([...array_values($data), $existing['id']]);

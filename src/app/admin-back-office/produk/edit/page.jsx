@@ -41,6 +41,8 @@ const DESCRIPTION_MAX = 5000;
 const EMPTY = {
   product_name: '',
   product_category: '',
+  // '' = no merk (tbl_master_product.product_merk NULL)
+  product_merk: '',
   product_type_1: '',
   product_size: '',
   product_description: '',
@@ -53,6 +55,7 @@ const toForm = (product) => ({
   ...EMPTY,
   ...Object.fromEntries(Object.keys(EMPTY).map((key) => [key, product[key] ?? EMPTY[key]])),
   product_category: product.product_category ? String(product.product_category) : '',
+  product_merk: product.product_merk ? String(product.product_merk) : '',
 });
 
 // Static export: one page for new and existing products; ?id= picks the product.
@@ -120,6 +123,7 @@ function ProductForm({ id }) {
   // Read-only facts about an existing product (number, last saved), shown in the side panel.
   const [meta, setMeta] = useState(null);
   const [categories, setCategories] = useState([]);
+  const [merks, setMerks] = useState([]);
   // Existing product types, offered as suggestions so the catalogue's "Jenis produk" filter stays consistent.
   const [types, setTypes] = useState([]);
   const [loadError, setLoadError] = useState(null);
@@ -127,9 +131,10 @@ function ProductForm({ id }) {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    Promise.all([adminApi.categories.list(), adminApi.products.list(), id ? adminApi.products.get(id) : null]).then(
-      ([categoryRows, productRows, product]) => {
+    Promise.all([adminApi.categories.list(), adminApi.merks.list(), adminApi.products.list(), id ? adminApi.products.get(id) : null]).then(
+      ([categoryRows, merkRows, productRows, product]) => {
         setCategories(categoryRows);
+        setMerks([...merkRows].sort((a, b) => a.merk_name.localeCompare(b.merk_name)));
         setTypes([...new Set(productRows.map((p) => p.product_type_1).filter(Boolean))].sort());
         setForm(product ? toForm(product) : EMPTY);
         setMeta(product);
@@ -158,7 +163,7 @@ function ProductForm({ id }) {
     }
 
     setSaving(true);
-    const data = { ...form, product_category: Number(form.product_category) };
+    const data = { ...form, product_category: Number(form.product_category), product_merk: form.product_merk ? Number(form.product_merk) : null };
     try {
       const saved = id ? await adminApi.products.update(id, data) : await adminApi.products.create(data);
       toast({ title: id ? 'Perubahan disimpan' : 'Produk ditambahkan', description: saved.product_name });
@@ -191,7 +196,7 @@ function ProductForm({ id }) {
         <div className={EDITOR_CARD}>
           {/* Wide screens: details on the left, photos on the right. */}
           <div className="divide-y divide-gray-100">
-            <FormGroup title="Informasi produk" subtitle="Nama, kategori, dan jenis yang dipakai untuk filter di katalog.">
+            <FormGroup title="Informasi produk" subtitle="Nama, kategori, merk, dan jenis yang dipakai untuk filter di katalog.">
               <div className="space-y-5">
                 <Field id="product_name" label="Nama produk" required error={errors.product_name}>
                   <Input
@@ -236,15 +241,42 @@ function ProductForm({ id }) {
                   </Field>
                 </div>
 
-                <Field id="product_size" label="Ukuran / kemasan" hint="Contoh: 200 (liter), 15 kg, atau 10 kVA." error={errors.product_size}>
-                  <Input
-                    {...describedBy('product_size', errors.product_size)}
-                    value={form.product_size}
-                    onChange={(e) => set('product_size')(e.target.value)}
-                    maxLength={255}
-                    className="sm:max-w-xs"
-                  />
-                </Field>
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <Field
+                    id="product_merk"
+                    label="Merk"
+                    hint={
+                      merks.length ? (
+                        'Boleh dikosongkan.'
+                      ) : (
+                        <>
+                          Belum ada merk. <Link href="/admin-back-office/merk/edit/" className="font-medium text-brand-700 hover:underline">Tambah merk</Link>
+                        </>
+                      )
+                    }
+                    error={errors.product_merk}
+                  >
+                    <Select
+                      {...describedBy('product_merk', errors.product_merk)}
+                      value={form.product_merk}
+                      onChange={(e) => set('product_merk')(e.target.value)}
+                    >
+                      <option value="">Tanpa merk</option>
+                      {merks.map((m) => (
+                        <option key={m.id} value={m.id}>{m.merk_name}</option>
+                      ))}
+                    </Select>
+                  </Field>
+
+                  <Field id="product_size" label="Ukuran / kemasan" hint="Contoh: 200 (liter), 15 kg, atau 10 kVA." error={errors.product_size}>
+                    <Input
+                      {...describedBy('product_size', errors.product_size)}
+                      value={form.product_size}
+                      onChange={(e) => set('product_size')(e.target.value)}
+                      maxLength={255}
+                    />
+                  </Field>
+                </div>
               </div>
             </FormGroup>
 
