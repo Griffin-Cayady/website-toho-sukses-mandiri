@@ -8,6 +8,7 @@ import {
   CaretDoubleLeftIcon,
   CaretDoubleRightIcon,
   CircleNotchIcon,
+  EnvelopeSimpleIcon,
   ListIcon,
   PackageIcon,
   SignOutIcon,
@@ -28,6 +29,10 @@ const NAV_GROUPS = [
       { href: '/admin-back-office/produk/', label: 'Produk', icon: PackageIcon },
       { href: '/admin-back-office/kategori/', label: 'Kategori', icon: SquaresFourIcon },
     ],
+  },
+  {
+    label: 'Kontak',
+    items: [{ href: '/admin-back-office/pesan/', label: 'Pesan masuk', icon: EnvelopeSimpleIcon }],
   },
 ];
 

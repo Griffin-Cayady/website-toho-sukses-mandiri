@@ -64,6 +64,11 @@ export const adminApi = {
   changePassword: (current, next) => request('password.php', { method: 'POST', body: { current, new: next } }),
   products: resource('products.php', 'product', 'products'),
   categories: resource('categories.php', 'category', 'categories'),
+  // Contact form messages (tbl_contact_submissions): read and delete only.
+  messages: {
+    list: () => request('messages.php').then((d) => d.messages),
+    remove: (id) => request(`messages.php?id=${id}`, { method: 'DELETE' }),
+  },
   // kind: 'products' | 'categories'. Resolves to the stored path, e.g. "products/<name>.webp".
   upload: (kind, file) => {
     const form = new FormData();

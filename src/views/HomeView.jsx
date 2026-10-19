@@ -182,9 +182,8 @@ const HomeView = () => {
       return;
     }
 
-    // The contact table has no division column, so the chosen division is prefixed to the message.
-    const division = divisionBySlug[formData.get('division')];
-    if (division) data.message = `[Kategori: ${division.name}] ${data.message}`;
+    // tbl_contact_submissions.category = the chosen tbl_product_category.id; null for "Belum tahu / lebih dari satu".
+    data.category = divisionBySlug[formData.get('division')]?.categoryId ?? null;
 
     setIsSubmitting(true);
     try {

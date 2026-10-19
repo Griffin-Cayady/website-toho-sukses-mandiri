@@ -1,5 +1,5 @@
 <?php
-// POST /api/contact.php with JSON { name, phone, email, message } -> saves a row in tbl_contact_submissions.
+// POST /api/contact.php with JSON { name, phone, email, message, category } -> saves a row in tbl_contact_submissions.
 // Same rules as the form's validators in src/views/HomeView.jsx, checked again here because the browser can be bypassed.
 
 declare(strict_types=1);
@@ -23,8 +23,22 @@ $valid = mb_strlen($data['name']) >= 2 && mb_strlen($data['name']) <= 200
     && mb_strlen($data['message']) >= 10 && mb_strlen($data['message']) <= 5000;
 if (!$valid) send_json(422, ['error' => 'Periksa kembali data yang Anda isi.']);
 
+// category: the tbl_product_category.id picked in the form, or null ("Belum tahu / lebih dari satu").
+$category = $input['category'] ?? null;
+if ($category !== null && filter_var($category, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) === false) {
+    send_json(422, ['error' => 'Periksa kembali data yang Anda isi.']);
+}
+
 try {
-    db()->prepare('INSERT INTO tbl_contact_submissions (name, phone, email, message) VALUES (?, ?, ?, ?)')
+    // A category deleted after the visitor loaded the page is saved as null, so their message still arrives.
+    if ($category !== null) {
+        $exists = db()->prepare('SELECT 1 FROM tbl_product_category WHERE id = ?');
+        $exists->execute([(int) $category]);
+        $data['category'] = $exists->fetchColumn() ? (int) $category : null;
+    } else {
+        $data['category'] = null;
+    }
+    db()->prepare('INSERT INTO tbl_contact_submissions (name, phone, email, message, category) VALUES (?, ?, ?, ?, ?)')
         ->execute(array_values($data));
 } catch (PDOException $e) {
     fail('Pesan tidak dapat disimpan.', $e);
