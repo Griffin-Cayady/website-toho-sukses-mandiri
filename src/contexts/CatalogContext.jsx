@@ -2,7 +2,8 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useSyncExternalStore } from 'react';
 import { apiGet, imageUrl, logApiError } from '@/lib/api';
-import { UNKNOWN_DIVISION, divisionFromCategory } from '@/lib/divisions';
+import { UNKNOWN_DIVISION, divisionFromCategory, merkPath } from '@/lib/divisions';
+import { parseSize } from '@/lib/productInfo';
 
 const CatalogContext = createContext();
 
@@ -13,16 +14,6 @@ const withImageUrl = (product, division) => ({
   gallery: product.images?.map(imageUrl).filter(Boolean),
 });
 
-// product_size may be a number (200), a number with a unit ("200 L", "15 kg") or a machine spec ("10 kVA").
-const parseSize = (size) => {
-  if (size == null || size === '') return {};
-  if (typeof size === 'number') return { quantity: size, unit: 'L' };
-  const match = String(size).trim().match(/^(\d+(?:[.,]\d+)?)\s*(l|liter|litre|kg)?$/i);
-  if (!match) return { spec: String(size).trim() };
-  const unit = match[2]?.toLowerCase() === 'kg' ? 'kg' : 'L';
-  return { quantity: Number(match[1].replace(',', '.')), unit };
-};
-
 // Maps a tbl_master_product row onto the product shape the site uses.
 // product_image_1 is the card photo; product_image_1..5 are the pop-up carousel slides. Empty (NULL) columns are skipped.
 const imageColumn = (row, n) => {
@@ -30,7 +21,7 @@ const imageColumn = (row, n) => {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 };
 
-const fromProductRow = (row, division) => {
+const fromProductRow = (row, division, merkName) => {
   const images = [1, 2, 3, 4, 5].map((n) => imageColumn(row, n)).filter(Boolean);
   return {
     id: row.id,
@@ -39,6 +30,10 @@ const fromProductRow = (row, division) => {
     division: division.slug,
     // tbl_master_product.product_category (= tbl_product_category.id)
     categoryId: row.product_category,
+    // tbl_master_product.product_merk (= tbl_master_merk.id); NULL = no merk
+    merkId: row.product_merk ?? null,
+    // tbl_master_merk.merk_name of that id; null when the product has no merk
+    merk: merkName ?? null,
     image: imageColumn(row, 1),
     images,
     // 1 = show in the home page "Produk pilihan" section
@@ -55,7 +50,7 @@ const fromProductRow = (row, division) => {
 // does not exist on the site (its products are hidden too).
 const loadCatalog = async () => {
   try {
-    const { categories, products: rows } = await apiGet('catalog.php');
+    const { categories, products: rows, merks = [], certifications = [] } = await apiGet('catalog.php');
     if (categories.length === 0) console.warn('tbl_product_category returned no active categories (none with status = 1).');
     if (rows.length === 0) console.warn('tbl_master_product returned no active products (none with product_status = 1).');
 
@@ -68,28 +63,54 @@ const loadCatalog = async () => {
     if (unmapped.length) {
       console.warn(`${unmapped.length} product(s) have a product_category that is not in tbl_product_category and are hidden:`, [...new Set(unmapped.map((r) => r.product_category))]);
     }
+    const merkNameById = new Map(merks.map((m) => [m.id, m.merk_name]));
     const products = rows
       .filter((row) => divisionById.has(row.product_category))
       .map((row) => {
         const division = divisionById.get(row.product_category);
-        return withImageUrl(fromProductRow(row, division), division);
+        return withImageUrl(fromProductRow(row, division, merkNameById.get(row.product_merk)), division);
       });
-    return { divisions, products, error: null };
+    // tbl_master_merk rows that active products use (tbl_master_product.product_merk), so a merk never opens an empty page.
+    const activeMerks = merks
+      .map((m) => ({
+        id: m.id,
+        name: m.merk_name,
+        description: m.merk_description?.trim() || null,
+        // tbl_master_merk.file_catalog_merk: link to the merk's catalogue (Google Drive). Only http(s) is used as a link; anything else counts as none.
+        catalogUrl: /^https?:\/\//i.test(m.file_catalog_merk?.trim() ?? '') ? m.file_catalog_merk.trim() : null,
+        // tbl_master_merk.merk_image: a file name under NEXT_PUBLIC_IMAGE_BASE_URL or a full URL; empty shows the merk's initial.
+        imageUrl: m.merk_image?.trim() ? imageUrl(m.merk_image.trim()) : null,
+        // tbl_certification_merk rows with this merk_id; certification_image is resolved like merk_image (empty shows a seal icon).
+        certifications: certifications
+          .filter((c) => c.merk_id === m.id)
+          .map((c) => ({
+            id: c.id,
+            name: c.certification_name,
+            desc: c.certification_description?.trim() || null,
+            imageUrl: c.certification_image?.trim() ? imageUrl(c.certification_image.trim()) : null,
+          })),
+        path: merkPath(m.id),
+        count: products.filter((p) => p.merkId === m.id).length,
+      }))
+      .filter((m) => m.count > 0);
+    return { divisions, merks: activeMerks, products, error: null };
   } catch (err) {
     logApiError('fetchCatalog', err);
-    return { divisions: [], products: [], error: 'Produk tidak dapat dimuat karena server tidak dapat dihubungi.' };
+    return { divisions: [], merks: [], products: [], error: 'Produk tidak dapat dimuat karena server tidak dapat dihubungi.' };
   }
 };
 
 export const CatalogProvider = ({ children }) => {
   // Empty until tbl_product_category has loaded.
   const [divisions, setDivisions] = useState([]);
+  const [merks, setMerks] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const applyResult = useCallback((result) => {
     setDivisions(result.divisions);
+    setMerks(result.merks);
     setProducts(result.products);
     setError(result.error);
     setLoading(false);
@@ -116,12 +137,12 @@ export const CatalogProvider = ({ children }) => {
 
   // What the server rendered: no data yet. Handed to components while they hydrate (see useCatalog).
   const initialValue = useMemo(
-    () => ({ products: [], divisions: [], divisionBySlug: {}, divisionOf: () => UNKNOWN_DIVISION, loading: true, error: null, refetch }),
+    () => ({ products: [], divisions: [], merks: [], divisionBySlug: {}, divisionOf: () => UNKNOWN_DIVISION, loading: true, error: null, refetch }),
     [refetch]
   );
 
   return (
-    <CatalogContext.Provider value={{ products, divisions, divisionBySlug, divisionOf, loading, error, refetch, initialValue }}>
+    <CatalogContext.Provider value={{ products, divisions, merks, divisionBySlug, divisionOf, loading, error, refetch, initialValue }}>
       {children}
     </CatalogContext.Provider>
   );

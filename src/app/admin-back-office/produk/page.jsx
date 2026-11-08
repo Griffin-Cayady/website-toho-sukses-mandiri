@@ -41,7 +41,7 @@ const HEAD = [
   { label: 'Last update', sortKey: 'last_update' },
   { label: 'User update', sortKey: 'user_update' },
   { label: 'Aktif', className: 'w-20' },
-  { label: 'Aksi', srOnly: true, className: 'w-24' },
+  { label: 'Aksi', srOnly: true, className: 'w-[9.5rem]' },
 ];
 
 // Status tabs: each one is a filter and shows how many products it holds.
@@ -254,7 +254,7 @@ function ProductList() {
   const switchFor = (p) => (
     <RowSwitch checked={p.product_status} busy={savingIds.has(p.id)} onChange={() => toggleActive(p)} label={`Aktifkan ${p.product_name}`} />
   );
-  const actionsFor = (p) => <RowActions editHref={`${EDIT}?id=${p.id}`} onDelete={() => setToDelete(p)} name={p.product_name} />;
+  const actionsFor = (p) => <RowActions editHref={`${EDIT}?id=${p.id}`} copyHref={`${EDIT}?copy=${p.id}`} onDelete={() => setToDelete(p)} name={p.product_name} />;
 
   return (
     <>

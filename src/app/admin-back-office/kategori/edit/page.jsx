@@ -1,37 +1,29 @@
 'use client';
 
-import React, { Suspense, useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowRightIcon, FloppyDiskIcon } from '@phosphor-icons/react';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import AdminFrame, { FullPageSpinner } from '@/components/admin/AdminFrame';
 import { CoverPhotoField } from '@/components/admin/PhotoField';
+import UnsavedChangesGuard from '@/components/admin/UnsavedChangesGuard';
 import {
   CharCount,
   EDITOR_CARD,
-  EDITOR_GRID,
-  EDITOR_PANEL,
-  EditorActions,
   EditorSkeleton,
   Field,
   FormGroup,
   InfoRow,
   LoadError,
-  PANEL_SWITCH,
-  PanelActions,
-  Spinner,
-  StatusBadge,
+  SaveBar,
+  SaveError,
   Switch,
   describedBy,
 } from '@/components/admin/FormParts';
 import { formatDate } from '@/components/admin/ListParts';
 import { adminApi } from '@/lib/adminApi';
-import { imageUrl } from '@/lib/api';
-import { cn } from '@/lib/utils';
 
 const LIST = '/admin-back-office/kategori/';
 const NAME_MAX = 255;
@@ -62,80 +54,52 @@ function CategoryEditor() {
   );
 }
 
-// The category's card as the website's category list draws it (CategoryShowcase), updated as the admin types.
-function WebsitePreview({ form, productCount }) {
-  const src = form.image ? imageUrl(form.image) : null;
-  const name = form.category_name.trim();
-  const description = form.category_description.trim();
-  return (
-    <div
-      className={cn(
-        'relative isolate flex aspect-[16/11] flex-col justify-between overflow-hidden rounded-xl bg-brand-950 p-4 text-white transition-[filter,opacity] duration-300',
-        !form.status && 'opacity-70 grayscale'
-      )}
-    >
-      {src ? (
-        <img src={src} alt="" className="absolute inset-0 -z-10 h-full w-full object-cover" />
-      ) : (
-        <span className="bg-dots-light absolute inset-0 -z-10" aria-hidden="true" />
-      )}
-      <span className="absolute inset-0 -z-10 bg-gradient-to-t from-gray-950/90 via-gray-950/30 to-gray-950/10" aria-hidden="true" />
-      <span className="flex items-center justify-between gap-2 text-xs font-semibold tabular-nums">
-        <StatusBadge active={form.status} />
-        <span className="rounded-md bg-white/15 px-2 py-1 ring-1 ring-inset ring-white/25 backdrop-blur-md">
-          {productCount ? `${productCount} produk` : 'Katalog menyusul'}
-        </span>
-      </span>
-      <span className="min-w-0">
-        <span className={cn('block truncate text-xl font-extrabold leading-tight tracking-tight', !name && 'text-white/50')}>
-          {name || 'Nama kategori'}
-        </span>
-        <span className={cn('mt-1 line-clamp-2 text-sm leading-snug', description ? 'text-white/80' : 'text-white/45')}>
-          {description || 'Deskripsi kategori tampil di sini.'}
-        </span>
-        <span className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold">
-          Lihat produk
-          <ArrowRightIcon className="h-3.5 w-3.5" weight="bold" aria-hidden="true" />
-        </span>
-      </span>
-    </div>
-  );
-}
-
 function CategoryForm({ id }) {
   const router = useRouter();
   const { toast } = useToast();
   // Starts filled for a new category; an existing one is loaded first.
   const [form, setForm] = useState(id ? null : EMPTY);
-  // Read-only facts about an existing category (products, last saved), shown beside the form.
+  // The form as loaded; differences from it are unsaved changes.
+  const [initial, setInitial] = useState(id ? null : EMPTY);
+  // Read-only facts about an existing category (products, last saved), shown in "Riwayat".
   const [meta, setMeta] = useState(null);
   const [loadError, setLoadError] = useState(null);
   const [errors, setErrors] = useState({});
+  const [saveError, setSaveError] = useState(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!id) return;
     adminApi.categories.get(id).then(
       (category) => {
-        setForm({
+        const loaded = {
           category_name: category.category_name ?? '',
           category_description: category.category_description ?? '',
           image: category.image || null,
           status: category.status,
-        });
+        };
+        setForm(loaded);
+        setInitial(loaded);
         setMeta(category);
       },
       (err) => setLoadError(err.status === 404 ? 'Kategori ini tidak ditemukan. Mungkin sudah dihapus.' : err.message)
     );
   }, [id]);
 
+  const dirty = useMemo(() => form !== null && JSON.stringify(form) !== JSON.stringify(initial), [form, initial]);
+
   if (loadError) return <LoadError message={loadError} />;
   if (!form) return <EditorSkeleton />;
 
-  const set = (key) => (value) => setForm((f) => ({ ...f, [key]: value }));
+  // Editing a field clears its error straight away, so only problems that still exist stay on screen.
+  const set = (key) => (value) => {
+    setForm((f) => ({ ...f, [key]: value }));
+    setErrors((e) => (e[key] ? { ...e, [key]: undefined } : e));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (saving) return;
     if (!form.category_name.trim()) {
       setErrors({ category_name: 'Nama kategori wajib diisi.' });
       document.getElementById('category_name')?.focus();
@@ -143,111 +107,89 @@ function CategoryForm({ id }) {
     }
     setErrors({});
     setSaving(true);
+    setSaveError(null);
     try {
       const saved = id ? await adminApi.categories.update(id, form) : await adminApi.categories.create(form);
       toast({ title: id ? 'Perubahan disimpan' : 'Kategori ditambahkan', description: saved.category_name });
+      setInitial(form);
       router.push(LIST);
     } catch (err) {
       setErrors(err.fields || {});
-      toast({ variant: 'destructive', title: 'Kategori belum disimpan', description: err.message });
+      setSaveError(err.message);
       setSaving(false);
     }
   };
 
-  // The same two buttons sit in the side panel on desktop and in a bar along the bottom on smaller screens.
-  const actions = (
-    <>
-      <Button asChild variant="outline">
-        <Link href={LIST}>Batal</Link>
-      </Button>
-      <Button type="submit" disabled={saving} className="flex-1">
-        {saving ? <Spinner /> : <FloppyDiskIcon className="h-4 w-4" weight="bold" aria-hidden="true" />}
-        {saving ? 'Menyimpan…' : id ? 'Simpan perubahan' : 'Tambah kategori'}
-      </Button>
-    </>
-  );
-
   return (
     <form onSubmit={handleSubmit} noValidate>
-      <div className={EDITOR_GRID}>
-        {/* Wide screens: text and photo side by side, so the form fills the width without the 16:9 photo growing taller than the screen. */}
-        <div className={EDITOR_CARD}>
-          <FormGroup title="Nama dan deskripsi" subtitle="Yang dibaca pengunjung di menu dan halaman kategori.">
-            <div className="space-y-5">
-              <Field id="category_name" label="Nama kategori" required error={errors.category_name}>
-                <Input
-                  {...describedBy('category_name', errors.category_name)}
-                  aria-required="true"
-                  value={form.category_name}
-                  onChange={(e) => set('category_name')(e.target.value)}
-                  maxLength={NAME_MAX}
-                  placeholder="Contoh: Oli & Pelumas"
-                />
-              </Field>
-              <Field id="category_description" label="Deskripsi" error={errors.category_description}>
-                <Textarea
-                  {...describedBy('category_description', errors.category_description)}
-                  value={form.category_description}
-                  onChange={(e) => set('category_description')(e.target.value)}
-                  maxLength={DESCRIPTION_MAX}
-                  rows={5}
-                  placeholder="Contoh: Pelumas industri merek Sugimura untuk mesin hidrolik, kompresor, dan roda gigi."
-                />
-                <p className="flex justify-between gap-4 text-xs">
-                  <span className="text-gray-500">Boleh dikosongkan.</span>
-                  <CharCount value={form.category_description} max={DESCRIPTION_MAX} />
-                </p>
-              </Field>
-            </div>
-          </FormGroup>
+      <UnsavedChangesGuard when={dirty && !saving} />
+      {saveError && <SaveError title="Kategori belum disimpan" message={saveError} />}
 
-          <FormGroup title="Foto kategori" subtitle="Latar kartu kategori di beranda dan menu produk.">
-            <CoverPhotoField id="category-photo" kind="categories" value={form.image} onChange={set('image')} error={errors.image} />
-          </FormGroup>
-        </div>
-
-        {/* Stays in view while the form scrolls. */}
-        <aside className={EDITOR_PANEL}>
-          <div className="p-4">
-            <p className="mb-2.5 px-1 text-xs font-semibold text-gray-500">Pratinjau di website</p>
-            <WebsitePreview form={form} productCount={meta?.product_count} />
+      {/* One column, read top to bottom; the save bar at the end stays in view while the form scrolls. */}
+      <div className={EDITOR_CARD}>
+        <FormGroup title="Informasi kategori" subtitle="Yang dibaca pengunjung di menu dan halaman kategori.">
+          <div className="space-y-5">
+            <Field id="category_name" label="Nama kategori" required error={errors.category_name}>
+              <Input
+                {...describedBy('category_name', errors.category_name)}
+                aria-required="true"
+                value={form.category_name}
+                onChange={(e) => set('category_name')(e.target.value)}
+                maxLength={NAME_MAX}
+                placeholder="Contoh: Oli & Pelumas"
+              />
+            </Field>
+            <Field id="category_description" label="Deskripsi" error={errors.category_description}>
+              <Textarea
+                {...describedBy('category_description', errors.category_description, true)}
+                value={form.category_description}
+                onChange={(e) => set('category_description')(e.target.value)}
+                maxLength={DESCRIPTION_MAX}
+                rows={5}
+                placeholder="Contoh: Pelumas industri merek Sugimura untuk mesin hidrolik, kompresor, dan roda gigi."
+              />
+              <p id="category_description-hint" className="flex justify-between gap-4 text-xs">
+                <span className="text-gray-500">Boleh dikosongkan.</span>
+                <CharCount value={form.category_description} max={DESCRIPTION_MAX} />
+              </p>
+            </Field>
           </div>
+        </FormGroup>
 
+        <FormGroup title="Foto kategori" subtitle="Latar kartu kategori di beranda dan menu produk.">
+          {/* Capped width: a full-width 16:9 photo would be taller than the screen. */}
+          <div className="max-w-2xl">
+            <CoverPhotoField id="category-photo" kind="categories" value={form.image} onChange={set('image')} error={errors.image} />
+          </div>
+        </FormGroup>
+
+        <FormGroup title="Tampilan di website" subtitle="Atur apakah kategori ini terlihat di website.">
           <Switch
             id="status"
             label="Tampilkan di website"
             description={form.status ? 'Kategori dan produknya terlihat pengunjung.' : 'Disembunyikan dari pengunjung.'}
             checked={form.status}
             onChange={set('status')}
-            className={PANEL_SWITCH}
           />
+        </FormGroup>
 
-          <dl className="divide-y divide-gray-100 border-t border-gray-100 px-5 py-1.5">
-            {meta ? (
-              <>
-                <InfoRow label="Nomor kategori"><span className="tabular-nums">{meta.id}</span></InfoRow>
-                <InfoRow label="Jumlah produk">
-                  <Link href={`/admin-back-office/produk/?kategori=${meta.id}`} className="tabular-nums text-brand-700 hover:underline">
-                    {meta.product_count} produk
-                  </Link>
-                </InfoRow>
-                <InfoRow label="Last update"><span className="tabular-nums">{formatDate(meta.last_update) ?? '—'}</span></InfoRow>
-                <InfoRow label="User update">{meta.user_update_name || meta.user_update || '—'}</InfoRow>
-              </>
-            ) : (
-              <div className="grid grid-cols-[1fr_auto] items-baseline gap-x-4 py-2 text-sm">
-                <dt className="text-gray-500">Nomor kategori</dt>
-                <dd className="font-medium text-gray-900">Otomatis</dd>
-                <dd className="col-span-2 mt-1 text-pretty text-xs leading-relaxed text-gray-500">Nomor terkecil yang belum dipakai, jadi tidak ada nomor yang terlewat.</dd>
-              </div>
-            )}
-          </dl>
+        {meta && (
+          <FormGroup title="Riwayat">
+            <dl className="divide-y divide-gray-100">
+              <InfoRow label="Nomor kategori"><span className="tabular-nums">{meta.id}</span></InfoRow>
+              <InfoRow label="Jumlah produk">
+                <Link href={`/admin-back-office/produk/?kategori=${meta.id}`} className="tabular-nums text-brand-700 hover:underline">
+                  {meta.product_count} produk
+                </Link>
+              </InfoRow>
+              <InfoRow label="Last update"><span className="tabular-nums">{formatDate(meta.last_update) ?? '—'}</span></InfoRow>
+              <InfoRow label="User update">{meta.user_update_name || meta.user_update || '—'}</InfoRow>
+            </dl>
+          </FormGroup>
+        )}
 
-          <PanelActions>{actions}</PanelActions>
-        </aside>
+        <SaveBar cancelHref={LIST} label={id ? 'Simpan perubahan' : 'Tambah kategori'} busy={saving} busyLabel="Menyimpan…" />
       </div>
-
-      <EditorActions>{actions}</EditorActions>
     </form>
   );
 }

@@ -1,25 +1,28 @@
 const UNIT_NAMES = { L: 'liter', kg: 'kg' };
 
-// Certifications that apply to the oil & lubricant products. `id` picks the logo in certLogos.js.
-export const OIL_CERTIFICATIONS = [
-  { id: 'iso9001', name: 'ISO 9001:2015', desc: 'Manajemen mutu' },
-  { id: 'iso14001', name: 'ISO 14001:2015', desc: 'Manajemen lingkungan' },
-  { id: 'sni', name: 'SNI', desc: 'Standar Nasional Indonesia' },
-];
+// product_size may be a number (200), a number with a unit ("200 L", "15 kg") or a machine spec ("10 kVA").
+// A bare number counts as litres. Also used by the back office preview, so it shows what the website will show.
+export const parseSize = (size) => {
+  if (size == null || size === '') return {};
+  if (typeof size === 'number') return { quantity: size, unit: 'L' };
+  const match = String(size).trim().match(/^(\d+(?:[.,]\d+)?)\s*(l|liter|litre|kg)?$/i);
+  if (!match) return { spec: String(size).trim() };
+  const unit = match[2]?.toLowerCase() === 'kg' ? 'kg' : 'L';
+  return { quantity: Number(match[1].replace(',', '.')), unit };
+};
 
-// Oil ships in 200 L drums and 18–20 L pails.
+// Oil ships in drums (190–200 L, some 108–109 L) and 18–20 L pails, so anything from 100 L up is a drum.
 export const packName = (product) => {
   if (product.spec) return product.spec;
   const unit = product.unit || 'L';
   if (unit !== 'L') return `${product.quantity} ${unit}`;
-  return `${product.quantity >= 200 ? 'Drum' : 'Pail'} ${product.quantity} L`;
+  return `${product.quantity >= 100 ? 'Drum' : 'Pail'} ${product.quantity} L`;
 };
 
 // Oil names start with the product series, e.g. "Sugigear HD-68" belongs to Sugigear.
 export const seriesName = (product) => (product.division === 'oli' ? product.name.split(' ')[0] : null);
 
 // Machines carry a `spec` (e.g. "10 kVA"); oil and welding wire carry a pack size.
-export const packBadge = (product) => product.spec || `${product.quantity} ${product.unit || 'L'}`;
 export const packLine = (product) =>
   product.spec ? `Spesifikasi ${product.spec}` : `Kemasan ${product.quantity} ${UNIT_NAMES[product.unit || 'L'] || product.unit}`;
 

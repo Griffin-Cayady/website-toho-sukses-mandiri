@@ -63,15 +63,15 @@ const AboutView = () => {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }} />
 
       {/* Hero: green-tinted photo background with the intro, benefits and company figures in one block */}
-      <section className="relative isolate flex flex-col justify-end overflow-hidden bg-brand-950 md:min-h-[720px]">
+      <section className="relative isolate flex flex-col justify-end overflow-hidden bg-brand-ink md:min-h-[720px]">
         <img
           src={IMAGES.aboutHero}
           alt="Gudang distribusi dengan rak penyimpanan bertingkat"
           className="absolute inset-0 -z-10 h-full w-full object-cover"
           fetchPriority="high"
         />
-        <div className="absolute inset-0 -z-10 bg-brand-800/40 mix-blend-multiply" aria-hidden="true" />
-        <div className="absolute inset-0 -z-10 bg-gradient-to-t from-brand-950 via-brand-950/75 to-brand-950/10" aria-hidden="true" />
+        <div className="absolute inset-0 -z-10 bg-brand-900/40 mix-blend-multiply" aria-hidden="true" />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-t from-brand-ink via-brand-950/80 to-brand-950/40" aria-hidden="true" />
         <div className="bg-dots-light pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-2/5 opacity-40 [mask-image:linear-gradient(to_top,black,transparent)]" aria-hidden="true" />
 
         <div className="mx-auto w-full max-w-7xl px-4 pt-28 sm:px-6 md:pt-40 lg:px-8">
@@ -81,7 +81,7 @@ const AboutView = () => {
               Tentang {COMPANY.name}
             </p>
             <h1 className="max-w-3xl text-[2.4rem] font-extrabold leading-[1.04] tracking-[-0.035em] text-white sm:text-5xl lg:text-6xl">
-              Satu mitra untuk <span className="text-brand-300">kebutuhan industri Anda.</span>
+              Satu mitra untuk <span className="text-brand-200">kebutuhan industri Anda.</span>
             </h1>
           </Reveal>
 
@@ -103,12 +103,12 @@ const AboutView = () => {
               <Button asChild variant="inverse" size="xl">
                 <Link href="/#contact-us">
                   Hubungi kami
-                  <ArrowRightIcon className="h-5 w-5" weight="bold" aria-hidden="true" />
+                  <ArrowRightIcon className="btn-arrow h-5 w-5" weight="bold" aria-hidden="true" />
                 </Link>
               </Button>
               <Link href="/products" className="group inline-flex items-center gap-2 font-semibold text-white transition-colors hover:text-sun">
                 Lihat produk
-                <ArrowRightIcon className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" weight="bold" aria-hidden="true" />
+                <ArrowRightIcon className="h-4 w-4 transition-transform duration-300 ease-out-expo group-hover:translate-x-1" weight="bold" aria-hidden="true" />
               </Link>
             </div>
           </Reveal>
@@ -117,7 +117,7 @@ const AboutView = () => {
           <dl aria-label="Angka perusahaan" className="mt-12 grid grid-cols-3 gap-x-4 border-t border-white/15 py-7 md:mt-20 md:gap-0 md:divide-x md:divide-white/15 md:py-9">
             {stats.map((stat, i) => (
               <Reveal key={stat.label} delay={180 + i * 80} className="flex flex-col-reverse gap-1 md:px-8 md:first:pl-0">
-                <dt className="flex items-center gap-2 text-sm font-medium text-white/70">
+                <dt className="flex items-center gap-2 text-sm font-medium text-white/85">
                   <stat.icon className="h-4 w-4 shrink-0 text-sun" weight="duotone" aria-hidden="true" />
                   {stat.label}
                 </dt>
@@ -152,7 +152,7 @@ const AboutView = () => {
       {/* Call to action */}
       <section className="pb-20 md:pb-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <Reveal className="relative overflow-hidden rounded-2xl bg-brand-700 px-6 py-9 text-white sm:px-10 md:py-10">
+          <Reveal className="relative overflow-hidden rounded-2xl bg-brand-ink px-6 py-9 text-white sm:px-10 md:py-10">
             <div className="bg-dots-light pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_at_right,black,transparent_70%)]" aria-hidden="true" />
             <div className="relative grid items-center gap-6 md:grid-cols-[1fr_auto]">
               <div>
@@ -162,7 +162,7 @@ const AboutView = () => {
               <Button asChild variant="inverse" size="lg">
                 <Link href="/#contact-us">
                   Minta penawaran
-                  <ArrowRightIcon className="h-4 w-4" weight="bold" aria-hidden="true" />
+                  <ArrowRightIcon className="btn-arrow h-4 w-4" weight="bold" aria-hidden="true" />
                 </Link>
               </Button>
             </div>
@@ -180,7 +180,7 @@ const AboutView = () => {
             </div>
             <Link href="/#contact-us" className="group inline-flex shrink-0 items-center gap-2 font-semibold text-brand-700 transition-colors hover:text-brand-800">
               Mulai dari langkah 1
-              <ArrowRightIcon className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" weight="bold" aria-hidden="true" />
+              <ArrowRightIcon className="h-4 w-4 transition-transform duration-300 ease-out-expo group-hover:translate-x-1" weight="bold" aria-hidden="true" />
             </Link>
           </Reveal>
 
@@ -198,7 +198,7 @@ const AboutView = () => {
                   </span>
                 )}
                 <span
-                  className="timeline-node absolute left-0 top-0 flex h-10 w-10 items-center justify-center rounded-full bg-white text-sm font-bold tabular-nums text-brand-700 ring-2 ring-brand-600 transition-colors duration-300 group-hover:bg-brand-600 group-hover:text-white lg:relative"
+                  className="timeline-node absolute left-0 top-0 flex h-10 w-10 items-center justify-center rounded-full bg-white text-sm font-bold tabular-nums text-brand-700 ring-2 ring-brand-600 transition-colors duration-300 group-hover:bg-brand-action group-hover:text-white lg:relative"
                   style={{ '--step-delay': `${300 + i * 220}ms` }}
                 >
                   {i + 1}

@@ -4,9 +4,9 @@
 
 declare(strict_types=1);
 
-const UPLOAD_KINDS = ['products', 'categories'];
+const UPLOAD_KINDS = ['products', 'categories', 'merks', 'certifications'];
 // The subfolder of UPLOAD_DIR each kind is saved in.
-const UPLOAD_FOLDERS = ['products' => 'product_image', 'categories' => 'category_image'];
+const UPLOAD_FOLDERS = ['products' => 'product_image', 'categories' => 'category_image', 'merks' => 'merk_image', 'certifications' => 'certification_image'];
 const UPLOAD_MAX_BYTES = 5 * 1024 * 1024;
 const UPLOAD_TYPES = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
 

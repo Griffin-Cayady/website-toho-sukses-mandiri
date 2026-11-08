@@ -15,8 +15,6 @@ import {
   WarningIcon,
   CheckCircleIcon,
   CaretDownIcon,
-  CaretLeftIcon,
-  CaretRightIcon,
 } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -25,41 +23,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import ProductCard from '@/components/ProductCard';
 import Reveal from '@/components/Reveal';
-import CategoryShowcase from '@/components/CategoryShowcase';
+import CatalogBrowse, { BrowseCard, BrowseSection } from '@/components/CatalogBrowse';
+import CarouselArrows, { edgesOf } from '@/components/CarouselArrows';
+import MerkDialog from '@/components/MerkDialog';
 import { useCatalog } from '@/contexts/CatalogContext.jsx';
 import { apiPost, logApiError } from '@/lib/api';
 import { COMPANY } from '@/lib/company';
 import { IMAGES } from '@/lib/images';
 import { SECTORS } from '@/lib/divisions';
 import { cn } from '@/lib/utils';
-
-// '3' -> 'Tiga' for the category heading; larger counts stay as digits.
-const COUNT_WORDS = ['Nol', 'Satu', 'Dua', 'Tiga', 'Empat', 'Lima', 'Enam', 'Tujuh', 'Delapan', 'Sembilan', 'Sepuluh'];
-
-// Previous/next buttons for a sideways-scrolling row. `edges` says whether the row is at its start or end.
-const CarouselArrows = ({ edges, onScroll, controls, prevLabel, nextLabel }) => (
-  <div className="flex gap-2">
-    {[
-      { dir: -1, label: prevLabel, Icon: CaretLeftIcon, disabled: edges.start },
-      { dir: 1, label: nextLabel, Icon: CaretRightIcon, disabled: edges.end },
-    ].map(({ dir, label, Icon, disabled }) => (
-      <button
-        key={dir}
-        type="button"
-        onClick={() => onScroll(dir)}
-        disabled={disabled}
-        aria-label={label}
-        aria-controls={controls}
-        className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-gray-800 shadow-soft ring-1 ring-gray-200 transition-[background-color,color,opacity,transform] duration-200 hover:bg-brand-600 hover:text-white hover:ring-brand-600 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 disabled:pointer-events-none disabled:opacity-40"
-      >
-        <Icon className="h-4 w-4" weight="bold" aria-hidden="true" />
-      </button>
-    ))}
-  </div>
-);
-
-// Row edges from its scroll position, with a few pixels of slack for rounding.
-const edgesOf = (track) => ({ start: track.scrollLeft <= 4, end: track.scrollLeft + track.clientWidth >= track.scrollWidth - 4 });
 
 const BENEFITS = [
   {
@@ -108,7 +80,7 @@ const FormField = ({ id, label, error, children }) => (
 
 const HomeView = () => {
   const { toast } = useToast();
-  const { products, divisions, divisionBySlug, loading } = useCatalog();
+  const { products, divisions, divisionBySlug, merks, loading } = useCatalog();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
   const [submitted, setSubmitted] = useState(false);
@@ -143,6 +115,11 @@ const HomeView = () => {
     // Products marked product_best_selling = 1 in the database.
     return products.filter((p) => p.bestSelling);
   }, [products, loading]);
+
+  // Merks with active products (the context drops the rest), most products first.
+  const merkList = useMemo(() => [...merks].sort((a, b) => b.count - a.count), [merks]);
+  // The merk whose pop-up is open, or null.
+  const [openMerk, setOpenMerk] = useState(null);
 
   // More than four best sellers scroll sideways instead of wrapping onto a second row.
   const featuredCarousel = featuredProducts.length > 4;
@@ -257,7 +234,7 @@ const HomeView = () => {
               <Button asChild size="xl">
                 <Link href="/products">
                   Jelajahi produk
-                  <ArrowRightIcon className="h-5 w-5" weight="bold" aria-hidden="true" />
+                  <ArrowRightIcon className="btn-arrow h-5 w-5" weight="bold" aria-hidden="true" />
                 </Link>
               </Button>
               <Button variant="glass" size="xl" onClick={scrollToContact}>
@@ -268,36 +245,10 @@ const HomeView = () => {
         </div>
       </section>
 
-      {/* Categories, one per tbl_product_category row. Wide screens: a large photo panel that follows the hovered or
-          focused row of the numbered index beside it. Small screens: a swipeable row of photo cards. */}
-      <section aria-labelledby="categories-heading" className="pb-24 pt-20 md:pb-28 md:pt-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <Reveal className="mb-10 grid grid-cols-1 gap-5 md:mb-14 lg:grid-cols-12 lg:items-end lg:gap-16">
-            <div className="lg:col-span-7">
-              <p className="mb-3 text-sm font-semibold text-brand-700">Kategori produk</p>
-              <h2 id="categories-heading" className="text-3xl font-extrabold leading-[1.05] tracking-tight text-gray-900 [text-wrap:balance] md:text-5xl">
-                {divisions.length ? COUNT_WORDS[divisions.length] || divisions.length : 'Semua'} kategori, satu pemasok
-              </h2>
-            </div>
-            <div className="lg:col-span-5">
-              <p className="max-w-md text-[15px] leading-relaxed text-gray-600 [text-wrap:pretty]">
-                Pilih kategori untuk melihat produk, spesifikasi, dan kemasan yang tersedia.
-                {!loading && products.length > 0 && (
-                  <> Saat ini <span className="font-semibold tabular-nums text-gray-900">{products.length} produk</span> aktif di katalog.</>
-                )}
-              </p>
-              <Link href="/products" className="group mt-4 inline-flex items-center gap-2 font-semibold text-gray-900 transition-colors hover:text-brand-700">
-                Lihat semua produk
-                <ArrowRightIcon className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" weight="bold" aria-hidden="true" />
-              </Link>
-            </div>
-          </Reveal>
+      <CatalogBrowse />
 
-          <CategoryShowcase />
-        </div>
-      </section>
-
-      <section aria-labelledby="sectors-heading" className="bg-gray-50 py-20 md:py-24">
+      {/* Section backgrounds alternate white / light brand green (bg-brand-50/70) from the hero down to the footer. */}
+      <section aria-labelledby="sectors-heading" className="bg-brand-50/70 py-20 md:py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <Reveal className="mb-10 max-w-2xl">
             <p className="mb-3 text-sm font-semibold text-brand-700">Sektor yang kami layani</p>
@@ -353,22 +304,16 @@ const HomeView = () => {
 
       {/* Featured products (hidden until the database has products) */}
       {(loading || featuredProducts.length > 0) && (
-      <section className="bg-gray-50 py-24 md:py-28">
+      <section className="bg-brand-50/70 py-24 md:py-28">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <Reveal className="mb-12 flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <div>
               <p className="text-sm font-semibold text-brand-700">Produk pilihan</p>
               <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-gray-900 md:text-4xl">Produk terlaris</h2>
             </div>
-            <div className="flex items-center gap-5">
-              <Link href="/products" className="group inline-flex items-center gap-2 font-semibold text-gray-700 transition-colors hover:text-brand-700">
-                Lihat semua produk
-                <ArrowRightIcon className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" weight="bold" aria-hidden="true" />
-              </Link>
-              {featuredCarousel && (
-                <CarouselArrows edges={featuredEdges} onScroll={scrollFeatured} controls="featured-products" prevLabel="Produk sebelumnya" nextLabel="Produk berikutnya" />
-              )}
-            </div>
+            {featuredCarousel && (
+              <CarouselArrows edges={featuredEdges} onScroll={scrollFeatured} controls="featured-products" prevLabel="Produk sebelumnya" nextLabel="Produk berikutnya" />
+            )}
           </Reveal>
 
           <div
@@ -403,7 +348,6 @@ const HomeView = () => {
                   >
                     <ProductCard
                       product={product}
-                      showDivision
                       onQuoteRequest={(p) => {
                         prefillContactForm(p.division, p.name);
                         scrollToContact();
@@ -412,12 +356,49 @@ const HomeView = () => {
                   </Reveal>
                 ))}
           </div>
+
+          <div className="mt-5 flex justify-end">
+            <Link href="/products" className="group inline-flex items-center gap-2 font-semibold text-gray-700 transition-colors hover:text-brand-700">
+              Lihat semua produk
+              <ArrowRightIcon className="h-4 w-4 transition-transform duration-300 ease-out-expo group-hover:translate-x-1" weight="bold" aria-hidden="true" />
+            </Link>
+          </div>
         </div>
       </section>
       )}
 
+      {/* Merks (tbl_master_merk) that have active products, as the same cards as the categories above: white at rest, merk_image
+          fading in on hover. Hidden until the catalogue has loaded some. A card opens MerkDialog (certifications, link to products). */}
+      {!loading && merkList.length > 0 && (
+        <BrowseSection
+          id="merks"
+          eyebrow="Brand & sertifikasi"
+          title="Brand yang kami pasok"
+          intro="Pilih brand untuk melihat sertifikasinya dan semua produk yang tersedia."
+          items={merkList}
+          getKey={(merk) => merk.id}
+          prevLabel="Brand sebelumnya"
+          nextLabel="Brand berikutnya"
+          renderCard={(merk) => (
+            <BrowseCard
+              as="button"
+              type="button"
+              onClick={() => setOpenMerk(merk)}
+              aria-haspopup="dialog"
+              aria-label={`${merk.name}, lihat detail`}
+              image={merk.imageUrl}
+              meta={`${merk.count} produk`}
+              name={merk.name}
+              action="Lihat Detail"
+            />
+          )}
+        />
+      )}
+
+      {openMerk && <MerkDialog merk={openMerk} onClose={() => setOpenMerk(null)} />}
+
       {/* Contact */}
-      <section id="contact-us" className="scroll-mt-20 py-24 md:py-32">
+      <section id="contact-us" className="scroll-mt-20 bg-brand-50/70 py-24 md:py-32">
         <div className="mx-auto grid max-w-7xl grid-cols-1 gap-12 px-4 sm:px-6 lg:grid-cols-12 lg:gap-16 lg:px-8">
           <Reveal className="lg:col-span-5">
             <p className="text-sm font-semibold text-brand-700">Hubungi kami</p>
@@ -430,8 +411,8 @@ const HomeView = () => {
 
             <ul className="mt-10 space-y-2">
               <li>
-                <a href={COMPANY.mapsUrl} target="_blank" rel="noopener noreferrer" className="-mx-3 flex items-start gap-4 rounded-xl p-3 transition-colors hover:bg-gray-50">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700"><MapPinIcon className="h-5 w-5" weight="duotone" aria-hidden="true" /></span>
+                <a href={COMPANY.mapsUrl} target="_blank" rel="noopener noreferrer" className="-mx-3 flex items-start gap-4 rounded-xl p-3 transition-colors hover:bg-white/70">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-brand-700 ring-1 ring-brand-100"><MapPinIcon className="h-5 w-5" weight="duotone" aria-hidden="true" /></span>
                   <span>
                     <span className="block text-sm font-semibold text-gray-900">Kantor</span>
                     <span className="block text-sm leading-relaxed text-gray-600">{COMPANY.address}</span>
@@ -439,8 +420,8 @@ const HomeView = () => {
                 </a>
               </li>
               <li>
-                <a href={COMPANY.phoneHref} className="-mx-3 flex items-start gap-4 rounded-xl p-3 transition-colors hover:bg-gray-50">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700"><PhoneIcon className="h-5 w-5" weight="duotone" aria-hidden="true" /></span>
+                <a href={COMPANY.phoneHref} className="-mx-3 flex items-start gap-4 rounded-xl p-3 transition-colors hover:bg-white/70">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-brand-700 ring-1 ring-brand-100"><PhoneIcon className="h-5 w-5" weight="duotone" aria-hidden="true" /></span>
                   <span>
                     <span className="block text-sm font-semibold text-gray-900">Telepon</span>
                     <span className="block text-sm tabular-nums text-gray-600">{COMPANY.phoneDisplay}</span>
@@ -448,8 +429,8 @@ const HomeView = () => {
                 </a>
               </li>
               <li>
-                <a href={`mailto:${COMPANY.email}`} className="-mx-3 flex items-start gap-4 rounded-xl p-3 transition-colors hover:bg-gray-50">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700"><EnvelopeSimpleIcon className="h-5 w-5" weight="duotone" aria-hidden="true" /></span>
+                <a href={`mailto:${COMPANY.email}`} className="-mx-3 flex items-start gap-4 rounded-xl p-3 transition-colors hover:bg-white/70">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-brand-700 ring-1 ring-brand-100"><EnvelopeSimpleIcon className="h-5 w-5" weight="duotone" aria-hidden="true" /></span>
                   <span>
                     <span className="block text-sm font-semibold text-gray-900">Email</span>
                     <span className="block text-sm text-gray-600">{COMPANY.email}</span>

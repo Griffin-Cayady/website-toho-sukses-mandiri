@@ -7,7 +7,9 @@ module.exports = {
 				sans: ['var(--font-sans)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
 			},
 			colors: {
-				// Brand green built around the logo green #009200 (brand-600).
+				// Brand green ramp. Roles: action = button and selected fills (bright green chosen by the client; white text is 3.5:1, below AA);
+				// 600 = non-text accents (underlines, bars, rings) and action hover; 700 = green text; 800 = text hover;
+				// ink = the one dark-green surface (footer, dark sections); 50/100 = tints; 200 = accents on ink.
 				brand: {
 					50: '#eef8ee',
 					100: '#d6efd6',
@@ -17,9 +19,11 @@ module.exports = {
 					500: '#129c12',
 					600: '#009200',
 					700: '#007a00',
-					800: '#0b5f0e',
+					800: '#006b00',
 					900: '#0e4712',
 					950: '#072a09',
+					ink: '#0f6b16',
+					action: '#00a000',
 				},
 				// Logo yellow, used sparingly as a highlight.
 				sun: {
@@ -79,7 +83,7 @@ module.exports = {
 			boxShadow: {
 				soft: '0 1px 2px rgb(14 40 18 / 0.06), 0 8px 24px -12px rgb(14 40 18 / 0.18)',
 				lift: '0 2px 4px rgb(14 40 18 / 0.06), 0 24px 48px -20px rgb(14 40 18 / 0.30)',
-				brand: '0 8px 20px -8px rgb(0 146 0 / 0.55)',
+				brand: '0 8px 20px -8px rgb(0 160 0 / 0.4)',
 			},
 			zIndex: {
 				raised: '10',
@@ -89,8 +93,17 @@ module.exports = {
 				toast: '60',
 				skip: '70',
 			},
+			// Named, not arbitrary: tailwindcss-animate also claims duration-/ease-/delay-, so arbitrary values like
+			// duration-[600ms] are ambiguous and Tailwind silently drops them.
 			transitionTimingFunction: {
 				'out-expo': 'cubic-bezier(0.16, 1, 0.3, 1)',
+				'in-out-soft': 'cubic-bezier(0.65, 0, 0.35, 1)',
+			},
+			transitionDuration: {
+				600: '600ms',
+			},
+			transitionDelay: {
+				250: '250ms',
 			},
 		},
 	},

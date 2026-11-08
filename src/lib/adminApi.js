@@ -65,12 +65,13 @@ export const adminApi = {
   products: resource('products.php', 'product', 'products'),
   categories: resource('categories.php', 'category', 'categories'),
   merks: resource('merks.php', 'merk', 'merks'),
+  certifications: resource('certifications.php', 'certification', 'certifications'),
   // Contact form messages (tbl_contact_submissions): read and delete only.
   messages: {
     list: () => request('messages.php').then((d) => d.messages),
     remove: (id) => request(`messages.php?id=${id}`, { method: 'DELETE' }),
   },
-  // kind: 'products' | 'categories'. Resolves to the stored path, e.g. "products/<name>.webp".
+  // kind: 'products' | 'categories' | 'merks' | 'certifications'. Resolves to the stored path, e.g. "products/<name>.webp".
   upload: (kind, file) => {
     const form = new FormData();
     form.append('kind', kind);

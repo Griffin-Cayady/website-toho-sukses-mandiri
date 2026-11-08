@@ -4,9 +4,7 @@ import React, { useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import ProductsView from '@/views/ProductsView';
 import CategoryNotFound from '@/components/CategoryNotFound';
-import OilHighlights from '@/components/OilHighlights';
 import { useCatalog } from '@/contexts/CatalogContext.jsx';
-import { OIL_CATEGORY_ID } from '@/lib/divisions';
 
 const ALL = 'All';
 
@@ -25,12 +23,7 @@ const CategoryView = ({ id, category = ALL }) => {
   }
 
   // Until the category table loads, ProductsView shows its loading state for this slug.
-  return (
-    <>
-      {id === String(OIL_CATEGORY_ID) && <OilHighlights />}
-      <ProductsView division={division?.slug || `kategori-${id ?? ''}`} category={category} />
-    </>
-  );
+  return <ProductsView division={division?.slug || `kategori-${id ?? ''}`} category={category} />;
 };
 
 export default CategoryView;

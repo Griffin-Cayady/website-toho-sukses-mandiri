@@ -3,8 +3,6 @@ import { IMAGES } from '@/lib/images';
 // Opens a WhatsApp chat with 0812-8964-6720 (international format) with `message` prefilled.
 export const whatsappLink = (message) => `https://wa.me/6281289646720?text=${encodeURIComponent(message)}`;
 
-// Oil & lubricant catalogue (PDF) on Google Drive.
-export const OIL_BROCHURE_URL = 'https://drive.google.com/file/d/1JQPmUD80tka2l-pSpQoZWw05DqHQk61b/view?usp=sharing';
 
 // Company facts shared by the navbar, footer, contact section and structured data.
 export const COMPANY = {

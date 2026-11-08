@@ -3,36 +3,29 @@
 import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FloppyDiskIcon, ImageIcon, StarIcon } from '@phosphor-icons/react';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import AdminFrame, { FullPageSpinner } from '@/components/admin/AdminFrame';
 import PhotoField from '@/components/admin/PhotoField';
+import UnsavedChangesGuard from '@/components/admin/UnsavedChangesGuard';
 import {
   CharCount,
   EDITOR_CARD,
-  EDITOR_GRID,
-  EDITOR_PANEL,
-  EditorActions,
   EditorSkeleton,
   Field,
   FormGroup,
   InfoRow,
   LoadError,
-  PANEL_SWITCH,
-  PanelActions,
+  SaveBar,
+  SaveError,
   Select,
-  Spinner,
-  StatusBadge,
   Switch,
   describedBy,
 } from '@/components/admin/FormParts';
 import { formatDate } from '@/components/admin/ListParts';
 import { adminApi } from '@/lib/adminApi';
-import { imageUrl } from '@/lib/api';
-import { cn } from '@/lib/utils';
+import { packLine, parseSize } from '@/lib/productInfo';
 
 const LIST = '/admin-back-office/produk/';
 const MAX_PHOTOS = 5;
@@ -58,7 +51,8 @@ const toForm = (product) => ({
   product_merk: product.product_merk ? String(product.product_merk) : '',
 });
 
-// Static export: one page for new and existing products; ?id= picks the product.
+// Static export: one page for new and existing products; ?id= picks the product, ?copy= starts a new product
+// pre-filled from an existing one (without its photos: those files belong to the original and are deleted with it).
 export default function AdminProductEditPage() {
   return (
     <Suspense fallback={<FullPageSpinner />}>
@@ -68,83 +62,78 @@ export default function AdminProductEditPage() {
 }
 
 function ProductEditor() {
-  const id = useSearchParams().get('id');
+  const params = useSearchParams();
+  const id = params.get('id');
+  const copyId = id ? null : params.get('copy');
   return (
     <AdminFrame
       wide
       title={id ? 'Edit produk' : 'Tambah produk'}
-      description={id ? 'Perubahan tampil di katalog website setelah disimpan.' : 'Produk aktif langsung tampil di katalog website.'}
+      description={
+        id
+          ? 'Perubahan tampil di katalog website setelah disimpan.'
+          : copyId
+            ? 'Disalin dari produk lain, tanpa fotonya. Ubah yang berbeda, lalu simpan sebagai produk baru.'
+            : 'Produk aktif langsung tampil di katalog website.'
+      }
       back={{ href: LIST, label: 'Semua produk' }}
     >
-      <ProductForm key={id ?? 'new'} id={id} />
+      <ProductForm key={id ?? (copyId ? `copy-${copyId}` : 'new')} id={id} copyId={copyId} />
     </AdminFrame>
   );
 }
 
-// The product's card as the website's catalogue draws it (ProductCard), updated as the admin types.
-function WebsitePreview({ form, categoryName }) {
-  const src = form.images[0] ? imageUrl(form.images[0]) : null;
-  const name = form.product_name.trim();
-  const size = form.product_size.trim();
-  return (
-    <div className={cn('overflow-hidden rounded-xl bg-white ring-1 ring-gray-300/80 transition-[filter,opacity] duration-300', !form.product_status && 'opacity-70 grayscale')}>
-      <div className="relative aspect-[4/3] border-b border-gray-200/80 bg-gradient-to-b from-gray-50 to-gray-100/70">
-        {src ? (
-          <img src={src} alt="" className="h-full w-full object-contain p-6" />
-        ) : (
-          <span className="bg-dots flex h-full w-full items-center justify-center" aria-hidden="true">
-            <ImageIcon className="h-9 w-9 text-gray-300" />
-          </span>
-        )}
-        <span className="absolute left-3 top-3 flex items-center gap-1.5">
-          <StatusBadge active={form.product_status} />
-          {form.product_best_selling && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-sun-soft px-2 py-0.5 text-xs font-semibold text-gray-800">
-              <StarIcon className="h-3 w-3" weight="fill" aria-hidden="true" />
-              Pilihan
-            </span>
-          )}
-        </span>
-        {size && <span className="absolute right-3 top-3 rounded-md bg-white/90 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-gray-700 ring-1 ring-gray-200">{size}</span>}
-      </div>
-      <div className="p-4">
-        <p className="truncate text-xs font-medium text-brand-700">{[categoryName, form.product_type_1.trim()].filter(Boolean).join(' · ') || 'Kategori · Jenis'}</p>
-        <p className={cn('mt-1 line-clamp-2 font-semibold leading-snug', name ? 'text-gray-900' : 'text-gray-400')}>{name || 'Nama produk'}</p>
-        <p className={cn('mt-1 text-sm', size ? 'text-gray-500' : 'text-gray-400')}>{size ? `Ukuran ${size}` : 'Ukuran / kemasan'}</p>
-      </div>
-    </div>
-  );
-}
+const normalName = (name) => name.trim().toLowerCase();
 
-function ProductForm({ id }) {
+function ProductForm({ id, copyId }) {
   const router = useRouter();
   const { toast } = useToast();
   const [form, setForm] = useState(null);
+  // The form as loaded or last saved; differences from it are unsaved changes.
+  const [initial, setInitial] = useState(null);
   // Read-only facts about an existing product (number, last saved), shown in the side panel.
   const [meta, setMeta] = useState(null);
   const [categories, setCategories] = useState([]);
   const [merks, setMerks] = useState([]);
   // Existing product types, offered as suggestions so the catalogue's "Jenis produk" filter stays consistent.
   const [types, setTypes] = useState([]);
+  // Every product's id and name, to warn before a second product gets the same name.
+  const [names, setNames] = useState([]);
   const [loadError, setLoadError] = useState(null);
   const [errors, setErrors] = useState({});
+  const [saveError, setSaveError] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [uploadingPhotos, setUploadingPhotos] = useState(0);
 
   useEffect(() => {
-    Promise.all([adminApi.categories.list(), adminApi.merks.list(), adminApi.products.list(), id ? adminApi.products.get(id) : null]).then(
+    const source = id ?? copyId;
+    Promise.all([adminApi.categories.list(), adminApi.merks.list(), adminApi.products.list(), source ? adminApi.products.get(source) : null]).then(
       ([categoryRows, merkRows, productRows, product]) => {
         setCategories(categoryRows);
         setMerks([...merkRows].sort((a, b) => a.merk_name.localeCompare(b.merk_name)));
         setTypes([...new Set(productRows.map((p) => p.product_type_1).filter(Boolean))].sort());
-        setForm(product ? toForm(product) : EMPTY);
-        setMeta(product);
+        setNames(productRows.map((p) => ({ id: p.id, name: normalName(p.product_name || '') })));
+        const loaded = product ? { ...toForm(product), ...(id ? {} : { images: [] }) } : EMPTY;
+        setForm(loaded);
+        setInitial(loaded);
+        setMeta(id ? product : null);
       },
       (err) => setLoadError(err.status === 404 ? 'Produk ini tidak ditemukan. Mungkin sudah dihapus.' : err.message)
     );
-  }, [id]);
+  }, [id, copyId]);
 
-  const set = (key) => (value) => setForm((f) => ({ ...f, [key]: value }));
-  const setImages = (update) => setForm((f) => ({ ...f, images: typeof update === 'function' ? update(f.images) : update }));
+  const dirty = useMemo(() => form !== null && JSON.stringify(form) !== JSON.stringify(initial), [form, initial]);
+
+  // Editing a field clears its error straight away, so only problems that still exist stay on screen.
+  const clearError = (key) => setErrors((e) => (e[key] ? { ...e, [key]: undefined } : e));
+  const set = (key) => (value) => {
+    setForm((f) => ({ ...f, [key]: value }));
+    clearError(key);
+  };
+  const setImages = (update) => {
+    setForm((f) => ({ ...f, images: typeof update === 'function' ? update(f.images) : update }));
+    clearError('images');
+  };
 
   const sortedCategories = useMemo(() => [...categories].sort((a, b) => a.category_name.localeCompare(b.category_name)), [categories]);
 
@@ -153,6 +142,7 @@ function ProductForm({ id }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (saving || uploadingPhotos > 0) return;
     const missing = {};
     if (!form.product_name.trim()) missing.product_name = 'Nama produk wajib diisi.';
     if (!form.product_category) missing.product_category = 'Pilih kategori.';
@@ -163,187 +153,198 @@ function ProductForm({ id }) {
     }
 
     setSaving(true);
+    setSaveError(null);
     const data = { ...form, product_category: Number(form.product_category), product_merk: form.product_merk ? Number(form.product_merk) : null };
     try {
       const saved = id ? await adminApi.products.update(id, data) : await adminApi.products.create(data);
       toast({ title: id ? 'Perubahan disimpan' : 'Produk ditambahkan', description: saved.product_name });
+      setInitial(form);
       router.push(LIST);
     } catch (err) {
       setErrors(err.fields || {});
-      toast({ variant: 'destructive', title: 'Produk belum disimpan', description: err.message });
+      setSaveError(err.message);
       setSaving(false);
     }
   };
 
-  const categoryName = categories.find((c) => String(c.id) === form.product_category)?.category_name;
-
-  // The same two buttons sit in the side panel on desktop and in a bar along the bottom on smaller screens.
-  const actions = (
-    <>
-      <Button asChild variant="outline">
-        <Link href={LIST}>Batal</Link>
-      </Button>
-      <Button type="submit" disabled={saving} className="flex-1">
-        {saving ? <Spinner /> : <FloppyDiskIcon className="h-4 w-4" weight="bold" aria-hidden="true" />}
-        {saving ? 'Menyimpan…' : id ? 'Simpan perubahan' : 'Tambah produk'}
-      </Button>
-    </>
-  );
+  const category = categories.find((c) => String(c.id) === form.product_category);
+  const nameTaken = form.product_name.trim() !== '' && names.some((n) => String(n.id) !== String(id) && n.name === normalName(form.product_name));
+  const waitingForPhotos = uploadingPhotos > 0;
 
   return (
     <form onSubmit={handleSubmit} noValidate>
-      <div className={EDITOR_GRID}>
-        <div className={EDITOR_CARD}>
-          {/* Wide screens: details on the left, photos on the right. */}
-          <div className="divide-y divide-gray-100">
-            <FormGroup title="Informasi produk" subtitle="Nama, kategori, merk, dan jenis yang dipakai untuk filter di katalog.">
-              <div className="space-y-5">
-                <Field id="product_name" label="Nama produk" required error={errors.product_name}>
-                  <Input
-                    {...describedBy('product_name', errors.product_name)}
-                    aria-required="true"
-                    value={form.product_name}
-                    onChange={(e) => set('product_name')(e.target.value)}
-                    maxLength={255}
-                    placeholder="Contoh: Sugilube AW-68"
-                  />
-                </Field>
+      <UnsavedChangesGuard when={dirty && !saving} />
+      {saveError && <SaveError title="Produk belum disimpan" message={saveError} />}
 
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <Field id="product_category" label="Kategori" required error={errors.product_category}>
-                    <Select
-                      {...describedBy('product_category', errors.product_category)}
-                      aria-required="true"
-                      value={form.product_category}
-                      onChange={(e) => set('product_category')(e.target.value)}
-                    >
-                      <option value="">Pilih kategori</option>
-                      {sortedCategories.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.category_name}{c.status ? '' : ' (nonaktif)'}
-                        </option>
-                      ))}
-                    </Select>
-                  </Field>
+      {/* One column, read top to bottom; the save bar at the end stays in view while the form scrolls. */}
+      <div className={EDITOR_CARD}>
+        <FormGroup title="Informasi produk" subtitle="Nama, kategori, brand, dan jenis yang dipakai untuk filter di katalog.">
+          <div className="space-y-5">
+            <Field
+              id="product_name"
+              label="Nama produk"
+              required
+              hint={nameTaken && <span className="text-amber-700">Sudah ada produk dengan nama ini. Pastikan ini bukan produk yang sama.</span>}
+              error={errors.product_name}
+            >
+              <Input
+                {...describedBy('product_name', errors.product_name, nameTaken)}
+                aria-required="true"
+                value={form.product_name}
+                onChange={(e) => set('product_name')(e.target.value)}
+                maxLength={255}
+                placeholder="Contoh: Sugilube AW-68"
+              />
+            </Field>
 
-                  <Field id="product_type_1" label="Jenis produk" hint="Pilih dari daftar atau ketik jenis baru." error={errors.product_type_1}>
-                    <Input
-                      {...describedBy('product_type_1', errors.product_type_1)}
-                      list="product-types"
-                      value={form.product_type_1}
-                      onChange={(e) => set('product_type_1')(e.target.value)}
-                      maxLength={255}
-                      placeholder="Contoh: Hydraulic Oil"
-                    />
-                    <datalist id="product-types">
-                      {types.map((t) => <option key={t} value={t} />)}
-                    </datalist>
-                  </Field>
-                </div>
+            <Field
+              id="product_category"
+              label="Kategori"
+              required
+              hint={category && !category.status && <span className="text-amber-700">Kategori ini sedang nonaktif, jadi tidak tampil di website.</span>}
+              error={errors.product_category}
+            >
+              <Select
+                {...describedBy('product_category', errors.product_category, category && !category.status)}
+                aria-required="true"
+                value={form.product_category}
+                onChange={(e) => set('product_category')(e.target.value)}
+              >
+                <option value="">Pilih kategori</option>
+                {sortedCategories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.category_name}{c.status ? '' : ' (nonaktif)'}
+                  </option>
+                ))}
+              </Select>
+            </Field>
 
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <Field
-                    id="product_merk"
-                    label="Merk"
-                    hint={
-                      merks.length ? (
-                        'Boleh dikosongkan.'
-                      ) : (
-                        <>
-                          Belum ada merk. <Link href="/admin-back-office/merk/edit/" className="font-medium text-brand-700 hover:underline">Tambah merk</Link>
-                        </>
-                      )
-                    }
-                    error={errors.product_merk}
-                  >
-                    <Select
-                      {...describedBy('product_merk', errors.product_merk)}
-                      value={form.product_merk}
-                      onChange={(e) => set('product_merk')(e.target.value)}
-                    >
-                      <option value="">Tanpa merk</option>
-                      {merks.map((m) => (
-                        <option key={m.id} value={m.id}>{m.merk_name}</option>
-                      ))}
-                    </Select>
-                  </Field>
+            <Field id="product_type_1" label="Jenis produk" hint="Pilih dari daftar atau ketik jenis baru." error={errors.product_type_1}>
+              <Input
+                {...describedBy('product_type_1', errors.product_type_1, true)}
+                list="product-types"
+                value={form.product_type_1}
+                onChange={(e) => set('product_type_1')(e.target.value)}
+                maxLength={255}
+                placeholder="Contoh: Hydraulic Oil"
+              />
+              <datalist id="product-types">
+                {types.map((t) => <option key={t} value={t} />)}
+              </datalist>
+            </Field>
 
-                  <Field id="product_size" label="Ukuran / kemasan" hint="Contoh: 200 (liter), 15 kg, atau 10 kVA." error={errors.product_size}>
-                    <Input
-                      {...describedBy('product_size', errors.product_size)}
-                      value={form.product_size}
-                      onChange={(e) => set('product_size')(e.target.value)}
-                      maxLength={255}
-                    />
-                  </Field>
-                </div>
-              </div>
-            </FormGroup>
+            <Field
+              id="product_merk"
+              label="Brand"
+              hint={
+                merks.length ? (
+                  'Boleh dikosongkan.'
+                ) : (
+                  <>
+                    Belum ada brand. <Link href="/admin-back-office/merk/edit/" className="font-medium text-brand-700 hover:underline">Tambah brand</Link>
+                  </>
+                )
+              }
+              error={errors.product_merk}
+            >
+              <Select
+                {...describedBy('product_merk', errors.product_merk, true)}
+                value={form.product_merk}
+                onChange={(e) => set('product_merk')(e.target.value)}
+              >
+                <option value="">Tanpa brand</option>
+                {merks.map((m) => (
+                  <option key={m.id} value={m.id}>{m.merk_name}</option>
+                ))}
+              </Select>
+            </Field>
 
-            <FormGroup title="Deskripsi" subtitle="Tampil di jendela detail produk.">
-              <Field id="product_description" label="Deskripsi produk" error={errors.product_description}>
-                <Textarea
-                  {...describedBy('product_description', errors.product_description)}
-                  value={form.product_description}
-                  onChange={(e) => set('product_description')(e.target.value)}
-                  maxLength={DESCRIPTION_MAX}
-                  rows={5}
-                  placeholder="Contoh: Oli hidrolik anti-aus untuk mesin injeksi plastik dan alat berat."
-                />
-                <p className="flex justify-between gap-4 text-xs">
-                  <span className="text-gray-500">Boleh dikosongkan.</span>
-                  <CharCount value={form.product_description} max={DESCRIPTION_MAX} />
-                </p>
-              </Field>
-            </FormGroup>
+            <Field
+              id="product_size"
+              label="Ukuran / kemasan"
+              hint={
+                form.product_size.trim()
+                  ? `Di website: ${packLine(parseSize(form.product_size))}.`
+                  : 'Contoh: 200 (liter), 15 kg, atau 10 kVA.'
+              }
+              error={errors.product_size}
+            >
+              <Input
+                {...describedBy('product_size', errors.product_size, true)}
+                value={form.product_size}
+                onChange={(e) => set('product_size')(e.target.value)}
+                maxLength={255}
+              />
+            </Field>
           </div>
+        </FormGroup>
 
-          <FormGroup title="Foto produk" subtitle="Ubah urutan dengan tombol panah di setiap foto.">
-            <PhotoField id="product-photos" kind="products" label="Foto produk" value={form.images} onChange={setImages} max={MAX_PHOTOS} error={errors.images} />
+        <FormGroup title="Deskripsi" subtitle="Tampil di jendela detail produk.">
+          <Field id="product_description" label="Deskripsi produk" error={errors.product_description}>
+            <Textarea
+              {...describedBy('product_description', errors.product_description, true)}
+              value={form.product_description}
+              onChange={(e) => set('product_description')(e.target.value)}
+              maxLength={DESCRIPTION_MAX}
+              rows={5}
+              placeholder="Contoh: Oli hidrolik anti-aus untuk mesin injeksi plastik dan alat berat."
+            />
+            <p id="product_description-hint" className="flex justify-between gap-4 text-xs">
+              <span className="text-gray-500">Boleh dikosongkan.</span>
+              <CharCount value={form.product_description} max={DESCRIPTION_MAX} />
+            </p>
+          </Field>
+        </FormGroup>
+
+        <FormGroup title="Foto produk" subtitle={form.images.length > 1 ? 'Ubah urutan dengan tombol panah di setiap foto.' : undefined}>
+          <PhotoField
+            id="product-photos"
+            kind="products"
+            label="Foto produk"
+            value={form.images}
+            onChange={setImages}
+            onUploadingChange={setUploadingPhotos}
+            max={MAX_PHOTOS}
+            error={errors.images}
+          />
+        </FormGroup>
+
+        <FormGroup title="Tampilan di website" subtitle="Atur apakah produk ini terlihat dan ditonjolkan di website.">
+          <div className="space-y-3">
+            <Switch
+              id="product_status"
+              label="Tampilkan di website"
+              description={form.product_status ? 'Produk terlihat di katalog website.' : 'Disembunyikan dari pengunjung.'}
+              checked={form.product_status}
+              onChange={set('product_status')}
+            />
+            <Switch
+              id="product_best_selling"
+              label="Produk pilihan"
+              description='Tampil di bagian "Produk pilihan" di beranda.'
+              checked={form.product_best_selling}
+              onChange={set('product_best_selling')}
+            />
+          </div>
+        </FormGroup>
+
+        {meta && (
+          <FormGroup title="Riwayat">
+            <dl className="divide-y divide-gray-100">
+              <InfoRow label="Nomor produk"><span className="tabular-nums">{meta.id}</span></InfoRow>
+              <InfoRow label="Last update"><span className="tabular-nums">{formatDate(meta.last_update) ?? '—'}</span></InfoRow>
+              <InfoRow label="User update">{meta.user_update_name || meta.user_update || '—'}</InfoRow>
+            </dl>
           </FormGroup>
-        </div>
+        )}
 
-        {/* Stays in view while the form scrolls. */}
-        <aside className={EDITOR_PANEL}>
-          <div className="p-4">
-            <p className="mb-2.5 px-1 text-xs font-semibold text-gray-500">Pratinjau di katalog</p>
-            <WebsitePreview form={form} categoryName={categoryName} />
-          </div>
-
-          <Switch
-            id="product_status"
-            label="Tampilkan di website"
-            description={form.product_status ? 'Produk terlihat di katalog website.' : 'Disembunyikan dari pengunjung.'}
-            checked={form.product_status}
-            onChange={set('product_status')}
-            className={PANEL_SWITCH}
-          />
-          <Switch
-            id="product_best_selling"
-            label="Produk pilihan"
-            description='Tampil di bagian "Produk pilihan" di beranda.'
-            checked={form.product_best_selling}
-            onChange={set('product_best_selling')}
-            className={PANEL_SWITCH}
-          />
-
-          <dl className="divide-y divide-gray-100 border-t border-gray-100 px-5 py-1.5">
-            {meta ? (
-              <>
-                <InfoRow label="Nomor produk"><span className="tabular-nums">{meta.id}</span></InfoRow>
-                <InfoRow label="Last update"><span className="tabular-nums">{formatDate(meta.last_update) ?? '—'}</span></InfoRow>
-                <InfoRow label="User update">{meta.user_update_name || meta.user_update || '—'}</InfoRow>
-              </>
-            ) : (
-              <InfoRow label="Nomor produk"><span className="font-normal text-gray-500">Otomatis</span></InfoRow>
-            )}
-          </dl>
-
-          <PanelActions>{actions}</PanelActions>
-        </aside>
+        <SaveBar
+          cancelHref={LIST}
+          label={id ? 'Simpan perubahan' : 'Tambah produk'}
+          busy={saving || waitingForPhotos}
+          busyLabel={waitingForPhotos ? 'Menunggu foto…' : 'Menyimpan…'}
+        />
       </div>
-
-      <EditorActions>{actions}</EditorActions>
     </form>
   );
 }

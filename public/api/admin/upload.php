@@ -1,6 +1,6 @@
 <?php
-// POST /api/admin/upload.php (multipart: file, kind = products | categories) -> { path }
-// The returned path is what the product/category form saves; the file is checked by its contents, not its name,
+// POST /api/admin/upload.php (multipart: file, kind = products | categories | merks | certifications) -> { path }
+// The returned path is what the product/category/merk form saves; the file is checked by its contents, not its name,
 // and keeps its own (cleaned-up) name, see upload_name().
 
 declare(strict_types=1);

@@ -9,7 +9,10 @@ import { Spinner } from '@/components/admin/FormParts';
 const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_BYTES = 5 * 1024 * 1024;
 
-const tileButton = 'inline-flex h-7 w-7 items-center justify-center rounded-md bg-white/95 text-gray-800 shadow-sm transition-colors hover:bg-white disabled:opacity-40';
+// Light grey checks behind a logo, the usual sign that the empty parts of the image are transparent.
+const CHECKERBOARD = 'bg-white bg-[conic-gradient(#f3f4f6_25%,#fff_0_50%,#f3f4f6_0_75%,#fff_0)] bg-[length:20px_20px]';
+
+const tileButton = 'inline-flex h-9 w-9 items-center justify-center rounded-md bg-white/95 text-gray-800 shadow-sm transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 disabled:opacity-40';
 
 // The reason a file can't be uploaded, or null when it's fine (also checked again on the server).
 const fileProblem = (file) => {
@@ -20,7 +23,9 @@ const fileProblem = (file) => {
 
 // One large photo shown at the website's 16:9 banner shape, e.g. a category photo. Click or drag a file in to
 // upload; `value` is the stored path or null, `onChange` receives the new path or null.
-export function CoverPhotoField({ id, kind, value, onChange, error }) {
+// `logo`: a brand logo instead, shown whole (not cropped) on a checkerboard so transparent PNGs read as transparent.
+// `dark`: with `logo`, a white logo shown on the dark tile the website puts it on (certification logos).
+export function CoverPhotoField({ id, kind, value, onChange, error, logo = false, dark = false }) {
   const inputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
@@ -50,6 +55,7 @@ export function CoverPhotoField({ id, kind, value, onChange, error }) {
   const src = value ? imageUrl(value) : null;
   const message = uploadError || error;
   const pick = () => inputRef.current?.click();
+  const noun = logo ? 'logo' : 'foto';
 
   return (
     <div className="space-y-3">
@@ -60,18 +66,18 @@ export function CoverPhotoField({ id, kind, value, onChange, error }) {
         }}
         onDragLeave={() => setDragging(false)}
         onDrop={onDrop}
-        className={`relative aspect-[16/9] overflow-hidden rounded-xl transition-colors ${
-          src ? 'bg-gray-100' : 'border-2 border-dashed bg-gray-50/60'
+        className={`relative overflow-hidden rounded-xl transition-colors ${logo ? 'aspect-[3/2]' : 'aspect-[16/9]'} ${
+          !src ? 'border-2 border-dashed bg-gray-50/60' : logo ? (dark ? 'bg-brand-ink' : `${CHECKERBOARD} ring-1 ring-inset ring-gray-200`) : 'bg-gray-100'
         } ${dragging ? 'border-brand-600 bg-brand-50/60 ring-4 ring-brand-600/10' : 'border-gray-300'}`}
       >
         {src ? (
           <>
-            <img src={src} alt="Foto kategori" className="h-full w-full object-cover" />
+            <img src={src} alt={logo ? 'Pratinjau logo' : 'Foto kategori'} className={logo ? 'h-full w-full object-contain p-8 pb-16 sm:p-12 sm:pb-16' : 'h-full w-full object-cover'} />
             {/* Controls over the photo, on a soft dark fade so they stay readable on any image. */}
-            <div className="absolute inset-x-0 bottom-0 flex justify-end gap-2 bg-gradient-to-t from-gray-950/60 to-transparent p-3 pt-10">
+            <div className={`absolute inset-x-0 bottom-0 flex justify-end gap-2 bg-gradient-to-t to-transparent p-3 pt-10 ${logo && !dark ? 'from-white/90' : 'from-gray-950/60'}`}>
               <button type="button" onClick={pick} disabled={uploading} className="inline-flex h-9 items-center gap-2 rounded-lg bg-white/95 px-3 text-sm font-semibold text-gray-900 shadow-soft transition-colors hover:bg-white">
                 {uploading ? <Spinner /> : <UploadSimpleIcon className="h-4 w-4" aria-hidden="true" />}
-                {uploading ? 'Mengunggah…' : 'Ganti foto'}
+                {uploading ? 'Mengunggah…' : `Ganti ${noun}`}
               </button>
               <button type="button" onClick={() => onChange(null)} disabled={uploading} className="inline-flex h-9 items-center gap-2 rounded-lg bg-white/95 px-3 text-sm font-semibold text-red-600 shadow-soft transition-colors hover:bg-white">
                 <XIcon className="h-4 w-4" weight="bold" aria-hidden="true" />
@@ -92,7 +98,7 @@ export function CoverPhotoField({ id, kind, value, onChange, error }) {
             </span>
             <span>
               <span className="block text-sm font-semibold text-gray-900">
-                {uploading ? 'Mengunggah foto…' : dragging ? 'Lepaskan untuk mengunggah' : 'Klik untuk memilih foto'}
+                {uploading ? `Mengunggah ${noun}…` : dragging ? 'Lepaskan untuk mengunggah' : `Klik untuk memilih ${noun}`}
               </span>
               {!uploading && <span className="mt-0.5 block text-sm text-gray-500">atau seret file ke sini</span>}
             </span>
@@ -119,7 +125,13 @@ export function CoverPhotoField({ id, kind, value, onChange, error }) {
           {message}
         </p>
       ) : (
-        <p id={`${id}-hint`} className="text-xs text-gray-500">JPG, PNG, atau WebP, maksimal 5 MB. Rasio 16:9 (misalnya 1600 × 900 px) tampil paling baik.</p>
+        <p id={`${id}-hint`} className="text-pretty text-xs text-gray-500">
+          {logo && dark
+            ? 'Logo putih berlatar transparan (PNG atau WebP) tampil paling rapi, seperti di website. Maksimal 5 MB.'
+            : logo
+            ? 'PNG atau WebP berlatar transparan tampil paling rapi. JPG juga bisa. Maksimal 5 MB.'
+            : 'JPG, PNG, atau WebP, maksimal 5 MB. Rasio 16:9 (misalnya 1600 × 900 px) tampil paling baik.'}
+        </p>
       )}
     </div>
   );
@@ -127,11 +139,16 @@ export function CoverPhotoField({ id, kind, value, onChange, error }) {
 
 // Upload, order and remove photos. `value` is the list of stored paths; `onChange` receives an updater function,
 // since uploads finish after the user may have changed the list. Files are uploaded straight away and only kept
-// on the record once the form is saved.
-export default function PhotoField({ id, kind, value, onChange, max, error, label }) {
+// on the record once the form is saved. `onUploadingChange` reports how many files are still uploading, so the
+// form can hold its save button until they're done.
+export default function PhotoField({ id, kind, value, onChange, max, error, label, onUploadingChange }) {
   const inputRef = useRef(null);
-  const [uploading, setUploading] = useState(0);
+  const [uploading, setUploadingCount] = useState(0);
   const [uploadError, setUploadError] = useState(null);
+  const setUploading = (count) => {
+    setUploadingCount(count);
+    onUploadingChange?.(count);
+  };
 
   const handleFiles = async (fileList) => {
     setUploadError(null);
@@ -169,7 +186,8 @@ export default function PhotoField({ id, kind, value, onChange, max, error, labe
     <fieldset className="space-y-3">
       {/* The form section around the field shows the visible heading. */}
       <legend className="sr-only">{label}</legend>
-      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 min-[1600px]:grid-cols-3">
+      {/* Two per row on phones; from tablets up, tiles keep a thumbnail size (8.5–10rem) however wide the form is. */}
+      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(8.5rem,10rem))]">
         {value.map((path, index) => {
           const src = imageUrl(path);
           return (
@@ -208,7 +226,7 @@ export default function PhotoField({ id, kind, value, onChange, max, error, labe
               onClick={() => inputRef.current?.click()}
               disabled={uploading > 0}
               aria-describedby={`${id}-hint`}
-              className="flex h-full w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 bg-white text-sm font-medium text-gray-600 transition-colors hover:border-brand-600 hover:text-brand-700 disabled:cursor-wait"
+              className="flex h-full w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 bg-white text-sm font-medium text-gray-600 transition-colors hover:border-brand-600 hover:text-brand-700 focus-visible:border-brand-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-600/15 disabled:cursor-wait"
             >
               {uploading > 0 ? <Spinner className="h-6 w-6" /> : <UploadSimpleIcon className="h-6 w-6" aria-hidden="true" />}
               {uploading > 0 ? 'Mengunggah…' : 'Unggah foto'}

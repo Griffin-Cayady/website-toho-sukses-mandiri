@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ArrowDownIcon, ArrowUpIcon, ArrowsDownUpIcon, CaretLeftIcon, CaretRightIcon, ImageIcon, MagnifyingGlassIcon, PencilSimpleIcon, TrashIcon, XIcon } from '@phosphor-icons/react';
+import { ArrowDownIcon, ArrowUpIcon, ArrowsDownUpIcon, CaretLeftIcon, CaretRightIcon, CopyIcon, ImageIcon, MagnifyingGlassIcon, PencilSimpleIcon, TrashIcon, XIcon } from '@phosphor-icons/react';
 import { Input } from '@/components/ui/input';
 import { imageUrl } from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -125,9 +125,11 @@ export const IconAction = ({ label, icon: Icon, href, onClick, tone = 'default',
 };
 
 // `deleteBlocked`: why this row can't be deleted (e.g. a category that still has products); greys out the bin.
-export const RowActions = ({ editHref, onDelete, name, deleteBlocked }) => (
+// `copyHref`: adds a "duplicate" action that opens a new record pre-filled from this one.
+export const RowActions = ({ editHref, copyHref, onDelete, name, deleteBlocked }) => (
   <div className="flex justify-end gap-0.5">
     <IconAction label={`Edit ${name}`} icon={PencilSimpleIcon} href={editHref} />
+    {copyHref && <IconAction label={`Duplikat ${name}`} icon={CopyIcon} href={copyHref} />}
     <IconAction label={`Hapus ${name}`} icon={TrashIcon} onClick={onDelete} tone="danger" disabledReason={deleteBlocked} />
   </div>
 );

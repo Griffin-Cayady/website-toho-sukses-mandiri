@@ -23,7 +23,7 @@ export default function NotFound() {
             <Button asChild size="lg">
               <Link href="/products">
                 Lihat katalog produk
-                <ArrowRightIcon className="h-4 w-4" weight="bold" aria-hidden="true" />
+                <ArrowRightIcon className="btn-arrow h-4 w-4" weight="bold" aria-hidden="true" />
               </Link>
             </Button>
             <Button asChild size="lg" variant="outline">

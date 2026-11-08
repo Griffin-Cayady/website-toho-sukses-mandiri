@@ -25,12 +25,14 @@ import {
   rowNumber,
 } from '@/components/admin/ListParts';
 import { adminApi } from '@/lib/adminApi';
+import { imageUrl } from '@/lib/api';
 
 const EDIT = '/admin-back-office/merk/edit/';
 
 const HEAD = [
   { label: 'No', className: 'w-14' },
-  { label: 'Merk', className: 'w-[45%]' },
+  { label: 'Brand', className: 'w-[38%]' },
+  { label: 'Kategori' },
   { label: 'Produk' },
   { label: 'Last update' },
   { label: 'User update' },
@@ -47,17 +49,32 @@ const AddButton = () => (
   <Button asChild>
     <Link href={EDIT}>
       <PlusIcon className="h-4 w-4" weight="bold" aria-hidden="true" />
-      Tambah merk
+      Tambah brand
     </Link>
   </Button>
 );
 
-// Square tag icon in place of a photo: merks have no image column.
-const MerkIcon = () => (
-  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700 ring-1 ring-inset ring-brand-100" aria-hidden="true">
-    <TagIcon className="h-5 w-5" weight="duotone" />
-  </span>
-);
+// The merk's logo, shown whole on white; a tag icon when it has none.
+const MerkIcon = ({ merk }) => {
+  const src = merk.merk_image ? imageUrl(merk.merk_image) : null;
+  return src ? (
+    <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white p-1 ring-1 ring-inset ring-gray-200">
+      <img src={src} alt="" loading="lazy" className="max-h-full max-w-full object-contain" />
+    </span>
+  ) : (
+    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700 ring-1 ring-inset ring-brand-100" aria-hidden="true">
+      <TagIcon className="h-5 w-5" weight="duotone" />
+    </span>
+  );
+};
+
+// The merk's category as a chip (same look as the product list); older merks saved before the field existed have none.
+const MerkCategory = ({ merk }) =>
+  merk.category_name ? (
+    <span className="whitespace-nowrap rounded-md bg-gray-100 px-2 py-1 text-[13px] font-medium text-gray-700">{merk.category_name}</span>
+  ) : (
+    <span className="text-[13px] font-medium text-amber-700">Kategori belum dipilih</span>
+  );
 
 const ProductCount = ({ merk }) => (
   <span className="text-sm text-gray-600">
@@ -69,8 +86,8 @@ export default function AdminMerksPage() {
   return (
     <AdminFrame
       wide
-      title="Merk"
-      description="Merk (brand) yang bisa dipilih untuk setiap produk."
+      title="Brand"
+      description="Brand yang bisa dipilih untuk setiap produk."
       actions={<AddButton />}
     >
       <MerkList />
@@ -122,16 +139,16 @@ function MerkList() {
     try {
       await adminApi.merks.remove(toDelete.id);
       setMerks((list) => list.filter((m) => m.id !== toDelete.id));
-      toast({ title: 'Merk dihapus', description: toDelete.merk_name });
+      toast({ title: 'Brand dihapus', description: toDelete.merk_name });
       setToDelete(null);
     } catch (err) {
       if (err.status === 404) {
         // Deleted or renumbered elsewhere after this list loaded: reload instead of retrying.
         setToDelete(null);
-        toast({ variant: 'destructive', title: 'Data sudah berubah', description: 'Merk ini sudah tidak ada di database. Daftar dimuat ulang.' });
+        toast({ variant: 'destructive', title: 'Data sudah berubah', description: 'Brand ini sudah tidak ada di database. Daftar dimuat ulang.' });
         applyLoad(adminApi.merks.list());
       } else {
-        toast({ variant: 'destructive', title: 'Merk belum dihapus', description: err.message });
+        toast({ variant: 'destructive', title: 'Brand belum dihapus', description: err.message });
       }
     } finally {
       setDeleting(false);
@@ -143,13 +160,13 @@ function MerkList() {
   const blocked = toDelete?.product_count > 0;
   const empty =
     merks?.length === 0 ? (
-      <EmptyState icon={TagIcon} title="Belum ada merk" action={<AddButton />}>
-        Tambahkan merk seperti Sugimura atau Compero, lalu pilih merk untuk setiap produk.
+      <EmptyState icon={TagIcon} title="Belum ada brand" action={<AddButton />}>
+        Tambahkan brand seperti Sugimura atau Compero, lalu pilih brand untuk setiap produk.
       </EmptyState>
     ) : (
       <EmptyState
         icon={MagnifyingGlassIcon}
-        title="Tidak ada merk yang cocok"
+        title="Tidak ada brand yang cocok"
         action={
           <Button
             variant="outline"
@@ -183,15 +200,15 @@ function MerkList() {
         busy={merks === null}
         toolbar={
           <>
-            <FilterTabs label="Filter merk" options={tabs} value={view} onChange={resetPage(setView)} />
-            <SearchBox id="merk-search" value={query} onChange={resetPage(setQuery)} placeholder="Cari merk" className="lg:w-80" />
+            <FilterTabs label="Filter brand" options={tabs} value={view} onChange={resetPage(setView)} />
+            <SearchBox id="merk-search" value={query} onChange={resetPage(setQuery)} placeholder="Cari brand" className="lg:w-80" />
           </>
         }
       >
         <MobileList loading={merks === null} empty={rows.length === 0 && empty}>
           {rows.map((m, i) => (
             <li key={m.id} className="flex gap-3 p-4">
-              <MerkIcon />
+              <MerkIcon merk={m} />
               <div className="min-w-0 flex-1">
                 <p className="flex min-w-0 items-baseline gap-1.5">
                   <span className="shrink-0 text-sm tabular-nums text-gray-400">{rowNumber(currentPage, i)}.</span>
@@ -199,7 +216,8 @@ function MerkList() {
                     {m.merk_name}
                   </Link>
                 </p>
-                {m.merk_description && <p className="mt-0.5 line-clamp-2 text-sm text-gray-500">{m.merk_description}</p>}
+                <p className="mt-1"><MerkCategory merk={m} /></p>
+                {m.merk_description && <p className="mt-1 line-clamp-2 text-sm text-gray-500">{m.merk_description}</p>}
                 <div className="mt-2 flex items-center justify-between gap-2">
                   <ProductCount merk={m} />
                   {actionsFor(m)}
@@ -220,7 +238,7 @@ function MerkList() {
                 <NumberCell value={rowNumber(currentPage, i)} />
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-4">
-                    <MerkIcon />
+                    <MerkIcon merk={m} />
                     <div className="min-w-0 flex-1">
                       <Link href={`${EDIT}?id=${m.id}`} className="font-semibold text-gray-900 hover:text-brand-700">
                         {m.merk_name}
@@ -232,6 +250,7 @@ function MerkList() {
                     </div>
                   </div>
                 </td>
+                <td className="px-4 py-3"><MerkCategory merk={m} /></td>
                 <td className="px-4 py-3"><ProductCount merk={m} /></td>
                 <td className="whitespace-nowrap px-4 py-3 tabular-nums text-gray-700">{formatDate(m.last_update) ?? <span className="text-gray-400">—</span>}</td>
                 {/* The name of the tbl_user whose user_code is in user_update; the raw value if no user has that code. */}

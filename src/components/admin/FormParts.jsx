@@ -1,7 +1,9 @@
 'use client';
 
-import React from 'react';
-import { CircleNotchIcon, WarningIcon } from '@phosphor-icons/react';
+import React, { useEffect, useRef } from 'react';
+import Link from 'next/link';
+import { CircleNotchIcon, FloppyDiskIcon, WarningIcon } from '@phosphor-icons/react';
+import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 
@@ -13,7 +15,7 @@ export const Field = ({ id, label, required, hint, error, children, className })
       {required && <span className="ml-0.5 text-red-600" aria-hidden="true">*</span>}
     </Label>
     {children}
-    {hint && !error && <p id={`${id}-hint`} className="text-xs text-gray-500">{hint}</p>}
+    {hint && <p id={`${id}-hint`} className="text-xs text-gray-500">{hint}</p>}
     {error && (
       <p id={`${id}-error`} className="flex items-center gap-1.5 text-sm text-red-600">
         <WarningIcon className="h-4 w-4 shrink-0" weight="fill" aria-hidden="true" />
@@ -23,11 +25,12 @@ export const Field = ({ id, label, required, hint, error, children, className })
   </div>
 );
 
-// Props that connect a control to its Field's hint/error, e.g. <Input {...describedBy('name', errors.name)} />.
-export const describedBy = (id, error) => ({
+// Props that connect a control to its Field's hint and error, e.g. <Input {...describedBy('name', errors.name, true)} />.
+// Pass `hasHint` when the Field has a hint, so screen readers read it too.
+export const describedBy = (id, error, hasHint) => ({
   id,
   'aria-invalid': error ? true : undefined,
-  'aria-describedby': error ? `${id}-error` : undefined,
+  'aria-describedby': [hasHint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(' ') || undefined,
 });
 
 export const Select = React.forwardRef(({ className, children, ...props }, ref) => (
@@ -49,17 +52,19 @@ export const Switch = ({ id, checked, onChange, label, description, className })
   <div className={cn('flex items-start justify-between gap-4 rounded-lg border border-gray-200 bg-white p-4', className)}>
     <div>
       <label htmlFor={id} className="text-sm font-medium text-gray-900">{label}</label>
-      {description && <p className="mt-0.5 text-sm text-gray-500">{description}</p>}
+      {description && <p id={`${id}-desc`} className="mt-0.5 text-sm text-gray-500">{description}</p>}
     </div>
+    {/* The ::after layer stretches the tap area to 44px tall without changing how the switch looks. */}
     <button
       id={id}
       type="button"
       role="switch"
       aria-checked={checked}
+      aria-describedby={description ? `${id}-desc` : undefined}
       onClick={() => onChange(!checked)}
       className={cn(
-        'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2',
-        checked ? 'bg-brand-600' : 'bg-gray-300'
+        "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors after:absolute after:-inset-y-2.5 after:inset-x-0 after:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2",
+        checked ? 'bg-brand-600' : 'bg-gray-500'
       )}
     >
       <span className={cn('inline-block h-5 w-5 rounded-full bg-white shadow transition-transform', checked ? 'translate-x-[22px]' : 'translate-x-0.5')} />
@@ -67,25 +72,11 @@ export const Switch = ({ id, checked, onChange, label, description, className })
   </div>
 );
 
-export const StatusBadge = ({ active }) => (
-  <span
-    className={cn(
-      'inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-0.5 text-xs font-semibold',
-      active ? 'bg-brand-50 text-brand-800' : 'bg-gray-100 text-gray-600'
-    )}
-  >
-    <span className={cn('h-1.5 w-1.5 rounded-full', active ? 'bg-brand-600' : 'bg-gray-400')} aria-hidden="true" />
-    {active ? 'Aktif' : 'Nonaktif'}
-  </span>
-);
-
 export const Spinner = ({ className }) => <CircleNotchIcon className={cn('h-4 w-4 animate-spin', className)} aria-hidden="true" />;
 
-// Layout shared by the product and category edit pages: the form card, then a side panel (preview, switches,
-// details, buttons) that stays in view. Wide screens split the form card in two (see EDITOR_CARD).
-export const EDITOR_GRID = 'grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_360px] min-[1600px]:grid-cols-[minmax(0,1fr)_400px]';
-export const EDITOR_CARD = 'divide-y divide-gray-100 rounded-2xl bg-white shadow-soft ring-1 ring-gray-200/70 min-[1600px]:grid min-[1600px]:grid-cols-2 min-[1600px]:divide-x min-[1600px]:divide-y-0';
-export const EDITOR_PANEL = 'overflow-hidden rounded-2xl bg-white shadow-soft ring-1 ring-gray-200/70 lg:sticky lg:top-6';
+// The edit pages (product, category, merk) share one layout: a single card read top to bottom, its sections
+// (FormGroup) divided by lines, and a SaveBar as the last section.
+export const EDITOR_CARD = 'divide-y divide-gray-100 rounded-2xl bg-white shadow-soft ring-1 ring-gray-200/70';
 
 // One part of the form card: a short heading and what it's for, then its fields.
 export const FormGroup = ({ title, subtitle, children }) => (
@@ -100,12 +91,12 @@ export const FormGroup = ({ title, subtitle, children }) => (
 
 // "12 / 255" under a text field; turns amber close to the limit.
 export const CharCount = ({ value, max }) => (
-  <span className={cn('shrink-0 whitespace-nowrap tabular-nums', value.length > max * 0.9 ? 'text-amber-700' : 'text-gray-400')}>
+  <span className={cn('shrink-0 whitespace-nowrap tabular-nums', value.length > max * 0.9 ? 'text-amber-700' : 'text-gray-500')}>
     {value.length} / {max}
   </span>
 );
 
-// Label + value row in the side panel's details list.
+// Label + value row in an edit page's "Riwayat" list.
 export const InfoRow = ({ label, children }) => (
   <div className="flex items-baseline justify-between gap-4 py-2 text-sm">
     <dt className="text-gray-500">{label}</dt>
@@ -113,28 +104,47 @@ export const InfoRow = ({ label, children }) => (
   </div>
 );
 
-// The side panel's on/off switch, without the switch's own border box.
-export const PANEL_SWITCH = 'rounded-none border-x-0 border-b-0 border-gray-100 px-5';
-
-// Save and cancel: in the side panel on desktop, in a bar along the bottom of the screen on smaller screens.
-export const EditorActions = ({ children }) => (
-  <div className="sticky bottom-0 z-raised -mx-4 mt-6 flex gap-2 border-t border-gray-200 bg-white/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:hidden">
-    {children}
+// The last section of an edit card: Batal and the save button on the right, pinned to the bottom of the screen
+// while the form scrolls. `data-editor-actions` lets globals.css keep a focused field from scrolling under it.
+// `busyLabel` replaces the button text while `busy` (e.g. "Menyimpan…").
+export const SaveBar = ({ cancelHref, label, busy, busyLabel, disabled }) => (
+  <div data-editor-actions className="sticky bottom-0 z-raised rounded-b-2xl bg-white/95 px-5 py-4 backdrop-blur sm:px-8">
+    <div className="flex items-center justify-end gap-3">
+      <Button asChild variant="outline" className="h-11">
+        <Link href={cancelHref}>Batal</Link>
+      </Button>
+      <Button type="submit" disabled={busy || disabled} className="h-11 flex-1 px-6 sm:flex-none">
+        {busy ? <Spinner /> : <FloppyDiskIcon className="h-4 w-4" weight="bold" aria-hidden="true" />}
+        {busy ? busyLabel : label}
+      </Button>
+    </div>
   </div>
 );
-export const PanelActions = ({ children }) => <div className="hidden gap-2 border-t border-gray-100 bg-gray-50/70 p-4 lg:flex">{children}</div>;
 
-// Grey blocks in the shape of an edit page (form card left, side panel right) while its data loads.
-export const EditorSkeleton = () => {
-  const block = 'animate-pulse rounded-2xl bg-white ring-1 ring-gray-200/70';
+// Shown above the edit card when saving failed; takes focus so the message is read out and seen.
+export const SaveError = ({ title, message }) => {
+  const ref = useRef(null);
+  useEffect(() => {
+    ref.current?.focus();
+  }, [message]);
   return (
-    <div className={EDITOR_GRID} role="status" aria-busy="true">
-      <span className="sr-only">Memuat…</span>
-      <div className={`${block} h-[720px]`} aria-hidden="true" />
-      <div className={`${block} h-[460px]`} aria-hidden="true" />
+    <div ref={ref} tabIndex={-1} role="alert" className="mb-6 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-red-800 focus:outline-none">
+      <WarningIcon className="mt-0.5 h-5 w-5 shrink-0 text-red-600" weight="fill" aria-hidden="true" />
+      <div>
+        <p className="font-semibold">{title}</p>
+        <p className="mt-0.5 text-sm">{message} Isian Anda masih ada; coba simpan lagi.</p>
+      </div>
     </div>
   );
 };
+
+// A grey block in the shape of the edit card while its data loads.
+export const EditorSkeleton = () => (
+  <div role="status" aria-busy="true">
+    <span className="sr-only">Memuat…</span>
+    <div className="h-[720px] animate-pulse rounded-2xl bg-white ring-1 ring-gray-200/70" aria-hidden="true" />
+  </div>
+);
 
 // Message box for a list or form that could not load.
 export const LoadError = ({ message, onRetry }) => (

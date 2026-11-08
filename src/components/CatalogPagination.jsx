@@ -70,7 +70,7 @@ const CatalogPagination = ({ currentPage, totalPages, totalItems, itemsPerPage, 
           <ol key={slots} className={cn('items-center gap-1', className)}>
             {getPageItems(currentPage, totalPages, slots).map((item, i) =>
               item === GAP ? (
-                <li key={`gap-${i}`} className="flex h-10 w-5 items-end justify-center pb-2.5 text-gray-400 sm:w-6" aria-hidden="true">
+                <li key={`gap-${i}`} className="flex h-10 w-5 items-end justify-center pb-2.5 text-gray-500 sm:w-6" aria-hidden="true">
                   …
                 </li>
               ) : (
@@ -83,7 +83,7 @@ const CatalogPagination = ({ currentPage, totalPages, totalItems, itemsPerPage, 
                     className={cn(
                       'inline-flex h-10 min-w-10 items-center justify-center rounded-lg px-2 text-sm font-semibold tabular-nums transition-[background-color,color,box-shadow,transform] duration-200 ease-out active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-1 sm:px-3',
                       item === currentPage
-                        ? 'bg-brand-600 text-white shadow-brand'
+                        ? 'bg-brand-action text-white shadow-brand'
                         : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
                     )}
                   >

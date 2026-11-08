@@ -11,6 +11,7 @@ import {
   EnvelopeSimpleIcon,
   ListIcon,
   PackageIcon,
+  SealCheckIcon,
   SignOutIcon,
   SquaresFourIcon,
   TagIcon,
@@ -29,7 +30,8 @@ const NAV_GROUPS = [
     items: [
       { href: '/admin-back-office/produk/', label: 'Produk', icon: PackageIcon },
       { href: '/admin-back-office/kategori/', label: 'Kategori', icon: SquaresFourIcon },
-      { href: '/admin-back-office/merk/', label: 'Merk', icon: TagIcon },
+      { href: '/admin-back-office/merk/', label: 'Brand', icon: TagIcon },
+      { href: '/admin-back-office/sertifikasi/', label: 'Sertifikasi', icon: SealCheckIcon },
     ],
   },
   {
@@ -265,6 +267,7 @@ function SidebarContent({ pathname, user, logout, collapsed, onToggleCollapsed, 
           <button
             type="button"
             onClick={logout}
+            data-leave-guard
             className="group relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-gray-600 transition-colors hover:bg-red-50 hover:text-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
           >
             <SignOutIcon className="h-5 w-5" aria-hidden="true" />

@@ -5,7 +5,6 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   MagnifyingGlassIcon,
-  DownloadSimpleIcon,
   FunnelIcon,
   CheckIcon,
   CaretDownIcon,
@@ -15,12 +14,10 @@ import {
 } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useToast } from '@/components/ui/use-toast';
 import ProductCard from '@/components/ProductCard';
 import CatalogPagination from '@/components/CatalogPagination';
 import { useCatalog } from '@/contexts/CatalogContext.jsx';
 import { cn } from '@/lib/utils';
-import { OIL_BROCHURE_URL } from '@/lib/company';
 
 const ALL = 'All';
 
@@ -46,20 +43,22 @@ const subscribeToStorage = (onChange) => {
 
 /**
  * Product catalogue. On /products it shows every division with tabs (?divisi=...);
- * on a division page `division` locks it to that division. The category lives in ?kategori=.
+ * on a division page `division` locks it to that division, and on a merk page `merkId` locks it to that merk's
+ * products in every division. The category lives in ?kategori=.
  */
-const ProductsView = ({ category = ALL, division = null, divisionParam = ALL }) => {
-  const { toast } = useToast();
-  const { products, divisions, divisionBySlug, loading, error, refetch } = useCatalog();
+const ProductsView = ({ category = ALL, division = null, divisionParam = ALL, merkId = null }) => {
+  const { products, divisions, merks, divisionBySlug, loading, error, refetch } = useCatalog();
 
-  const locked = Boolean(division);
-  const activeDivision = locked ? division : divisionBySlug[divisionParam] ? divisionParam : ALL;
-  // Undefined while the category table loads.
-  const lockedDivision = locked ? divisionBySlug[division] : null;
+  const onMerkPage = merkId !== null;
+  const locked = Boolean(division) || onMerkPage;
+  const activeDivision = division || (!onMerkPage && divisionBySlug[divisionParam] ? divisionParam : ALL);
+  // Undefined while the catalog loads.
+  const lockedDivision = division ? divisionBySlug[division] : null;
+  const lockedMerk = onMerkPage ? merks.find((m) => String(m.id) === merkId) : null;
   const selectedCategory = category;
   const [searchQuery, setSearchQuery] = useState('');
-  // The page number belongs to one division + category; switching either starts again at page 1.
-  const filterKey = `${activeDivision}|${selectedCategory}`;
+  // The page number belongs to one division or merk + category; switching any starts again at page 1.
+  const filterKey = `${activeDivision}|${merkId}|${selectedCategory}`;
   const [pageState, setPageState] = useState({ key: filterKey, page: 1 });
   const currentPage = pageState.key === filterKey ? pageState.page : 1;
   const setCurrentPage = (page) => setPageState({ key: filterKey, page });
@@ -83,8 +82,11 @@ const ProductsView = ({ category = ALL, division = null, divisionParam = ALL }) 
   );
 
   const divisionProducts = useMemo(
-    () => (activeDivision === ALL ? products : products.filter((p) => p.division === activeDivision)),
-    [products, activeDivision]
+    () =>
+      products.filter(
+        (p) => (activeDivision === ALL || p.division === activeDivision) && (!onMerkPage || String(p.merkId) === merkId)
+      ),
+    [products, activeDivision, onMerkPage, merkId]
   );
 
   const categories = useMemo(() => {
@@ -107,6 +109,8 @@ const ProductsView = ({ category = ALL, division = null, divisionParam = ALL }) 
 
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
   const paginatedProducts = filteredProducts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  // A merk line on every card says nothing when the whole listing is one merk (e.g. the oil page, or a merk page).
+  const mixedMerks = new Set(divisionProducts.map((p) => p.merkId)).size > 1;
 
   const scrollToCatalog = () => {
     if (locked) document.getElementById('katalog')?.scrollIntoView({ behavior: 'smooth' });
@@ -157,24 +161,15 @@ const ProductsView = ({ category = ALL, division = null, divisionParam = ALL }) 
     changeCategory(ALL);
   };
 
-  const showOilBrochure = activeDivision === 'oli' || activeDivision === ALL;
-  // The brochure is the oil catalogue, so the button names the oil category (as stored in the database).
-  const oilCategoryName = divisionBySlug.oli?.name || 'Oli & Pelumas';
-  const handleDownloadBrochure = () => {
-    window.open(OIL_BROCHURE_URL, '_blank', 'noopener');
-    toast({
-      title: 'Membuka katalog oli',
-      description: 'Katalog PDF dibuka di tab baru.',
-    });
-  };
-
-  const scopeName = activeDivision === ALL ? 'semua kategori' : divisionBySlug[activeDivision]?.catalogName || 'kategori ini';
+  const scopeName = lockedMerk
+    ? `brand ${lockedMerk.name}`
+    : activeDivision === ALL ? 'semua kategori' : divisionBySlug[activeDivision]?.catalogName || 'kategori ini';
   const resultSummary = loading
     ? 'Memuat katalog...'
     : `${filteredProducts.length} produk ${selectedCategory !== ALL ? `dalam ${selectedCategory}` : `di ${scopeName}`}${searchQuery ? ` untuk "${searchQuery}"` : ''}`;
 
   const searchControls = (
-    // Phones: search on its own line, the catalogue button full width below it (always labelled). From sm: one row.
+    // The catalogue download lives on the home page, so the listing only has search here.
     <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center md:w-auto">
       <div className="relative flex-grow md:w-80">
         <MagnifyingGlassIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" weight="bold" aria-hidden="true" />
@@ -188,12 +183,6 @@ const ProductsView = ({ category = ALL, division = null, divisionParam = ALL }) 
           disabled={loading}
         />
       </div>
-      {showOilBrochure && (
-        <Button variant="outline" onClick={handleDownloadBrochure} className="h-11 w-full shrink-0 sm:w-auto">
-          <DownloadSimpleIcon className="h-4 w-4" weight="bold" aria-hidden="true" />
-          Download {oilCategoryName} Catalog
-        </Button>
-      )}
     </div>
   );
 
@@ -202,13 +191,16 @@ const ProductsView = ({ category = ALL, division = null, divisionParam = ALL }) 
       {locked ? (
         <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 pt-16 sm:px-6 md:flex-row md:items-end md:justify-between md:pt-20 lg:px-8">
           <div>
-            <p className="text-sm font-semibold text-brand-700">Katalog</p>
+            <p className="text-sm font-semibold text-brand-700">Halaman Produk</p>
             {lockedDivision ? (
+              <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-gray-900 md:text-4xl">
+                Kategori {lockedDivision.catalogName}
+              </h2>
+            ) : lockedMerk ? (
               <>
-                <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-gray-900 md:text-4xl">
-                  Produk {lockedDivision.catalogName}
-                </h2>
-                {lockedDivision.menuBlurb && <p className="mt-3 max-w-xl text-gray-600">{lockedDivision.menuBlurb}</p>}
+                <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-gray-900 md:text-4xl">
+                  Brand {lockedMerk.name}
+                </h1>
               </>
             ) : (
               <div className="mt-3 h-9 w-72 max-w-full animate-pulse rounded-lg bg-gray-200" aria-hidden="true" />
@@ -247,7 +239,7 @@ const ProductsView = ({ category = ALL, division = null, divisionParam = ALL }) 
                       )}
                     >
                       {d.name}
-                      {!loading && <span className={cn('text-xs tabular-nums', active ? 'text-brand-700' : 'text-gray-400')}>{count}</span>}
+                      {!loading && <span className={cn('text-xs tabular-nums', active ? 'text-brand-700' : 'text-gray-600')}>{count}</span>}
                     </button>
                   );
                 })}
@@ -324,7 +316,7 @@ const ProductsView = ({ category = ALL, division = null, divisionParam = ALL }) 
                           {active ? (
                             <CheckIcon className="h-4 w-4 shrink-0 text-brand-600" weight="bold" aria-hidden="true" />
                           ) : (
-                            <span className="text-xs tabular-nums text-gray-400">{cat.count}</span>
+                            <span className="text-xs tabular-nums text-gray-500">{cat.count}</span>
                           )}
                         </button>
                       </li>
@@ -413,7 +405,12 @@ const ProductsView = ({ category = ALL, division = null, divisionParam = ALL }) 
               <>
                 <div className="grid grid-cols-2 gap-3 md:gap-6 xl:grid-cols-3">
                   {paginatedProducts.map((product) => (
-                    <ProductCard key={product.id} product={product} showDivision={activeDivision === ALL} />
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      showMerk={mixedMerks}
+                      showCategory={selectedCategory === ALL}
+                    />
                   ))}
                 </div>
 

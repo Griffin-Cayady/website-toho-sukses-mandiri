@@ -6,7 +6,7 @@ import { Spinner } from '@/components/admin/FormParts';
 
 // Modal "are you sure?" built on <dialog>, which handles focus trapping and Escape itself.
 // Without onConfirm it is a plain notice with only a close button.
-export default function ConfirmDialog({ open, title, children, confirmLabel = 'Hapus', busy, onConfirm, onClose }) {
+export default function ConfirmDialog({ open, title, children, confirmLabel = 'Hapus', cancelLabel, busy, onConfirm, onClose }) {
   const ref = useRef(null);
 
   useEffect(() => {
@@ -31,7 +31,7 @@ export default function ConfirmDialog({ open, title, children, confirmLabel = 'H
       </div>
       <div className="flex justify-end gap-2 border-t border-gray-100 bg-gray-50 px-6 py-4">
         <Button type="button" variant="outline" onClick={onClose} disabled={busy}>
-          {onConfirm ? 'Batal' : 'Tutup'}
+          {cancelLabel ?? (onConfirm ? 'Batal' : 'Tutup')}
         </Button>
         {onConfirm && (
           <Button type="button" variant="destructive" onClick={onConfirm} disabled={busy}>

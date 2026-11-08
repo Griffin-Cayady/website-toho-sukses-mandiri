@@ -95,7 +95,7 @@ if (array_key_exists('product_merk', $input)) {
         $merk = filter_var($merk, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
         $merkExists = db()->prepare('SELECT 1 FROM tbl_master_merk WHERE id = ?');
         $merkExists->execute([$merk === false ? 0 : $merk]);
-        if ($merk === false || !$merkExists->fetchColumn()) $errors['product_merk'] = 'Merk ini sudah tidak ada. Pilih merk lain.';
+        if ($merk === false || !$merkExists->fetchColumn()) $errors['product_merk'] = 'Brand ini sudah tidak ada. Pilih brand lain.';
         $data['product_merk'] = $merk === false ? null : $merk;
     }
 }

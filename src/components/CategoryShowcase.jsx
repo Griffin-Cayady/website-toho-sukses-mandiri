@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link';
 import { ArrowRightIcon, CaretDownIcon } from '@phosphor-icons/react';
 import Reveal from '@/components/Reveal';
+import { buttonVariants } from '@/components/ui/button';
 import IndexScrollbar from '@/components/IndexScrollbar';
 import { useCatalog } from '@/contexts/CatalogContext.jsx';
 import { cn } from '@/lib/utils';
@@ -14,7 +15,7 @@ const CATEGORY_ROWS_VISIBLE = 6;
 const CATEGORY_ROW_REM = 5.5;
 
 /**
- * The product categories, one per tbl_product_category row (home and About pages). Wide screens: a large photo panel
+ * The product categories, one per tbl_product_category row (About page). Wide screens: a large photo panel
  * that follows the hovered or focused row of the numbered index beside it. Small screens: a swipeable row of photo cards.
  */
 const CategoryShowcase = () => {
@@ -106,9 +107,10 @@ const CategoryShowcase = () => {
                     {activeDivision.description && (
                       <p className="mt-3 max-w-md text-base leading-relaxed text-white/80 [text-wrap:pretty]">{activeDivision.description}</p>
                     )}
-                    <span className="mt-7 inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-gray-900 transition-colors duration-300 group-hover:bg-brand-600 group-hover:text-white">
+                    {/* The site's button on a dark photo (inverse); hovering the whole card turns it the main green. */}
+                    <span className={cn(buttonVariants({ variant: 'inverse' }), 'mt-7 group-hover:bg-brand-action group-hover:text-white')}>
                       Lihat produk
-                      <ArrowRightIcon className="h-4 w-4 transition-transform duration-300 ease-out-expo group-hover:translate-x-0.5" weight="bold" />
+                      <ArrowRightIcon className="btn-arrow h-4 w-4 group-hover:translate-x-1" weight="bold" aria-hidden="true" />
                     </span>
                   </div>
                 </div>
@@ -150,7 +152,7 @@ const CategoryShowcase = () => {
                             )}
                             aria-hidden="true"
                           />
-                          <span className={cn('w-6 shrink-0 text-sm font-semibold tabular-nums transition-colors', active ? 'text-brand-700' : 'text-gray-400')}>
+                          <span className={cn('w-6 shrink-0 text-sm font-semibold tabular-nums transition-colors', active ? 'text-brand-700' : 'text-gray-500')}>
                             {String(i + 1).padStart(2, '0')}
                           </span>
                           <span className="min-w-0 flex-1">

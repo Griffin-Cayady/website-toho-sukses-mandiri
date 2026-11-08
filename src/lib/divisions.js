@@ -44,6 +44,9 @@ export const titleCase = (text) => text.replace(/(^|[\s/(-])(\p{L})/gu, (_, befo
 // Every category shares one page, /kategori/, which reads the category id from ?id=.
 export const categoryPath = (id) => `/kategori/?id=${id}`;
 
+// Every merk shares one page too, /merk/, which reads the tbl_master_merk id from ?id=.
+export const merkPath = (id) => `/merk/?id=${id}`;
+
 // tbl_product_category row -> the category shape the site uses. Its photo and thumbnail are `row.imageUrl` (resolved
 // from the image column), or the branded category placeholder while that column is empty.
 export const divisionFromCategory = (row) => {
@@ -74,6 +77,9 @@ export const UNKNOWN_DIVISION = { ...GENERIC_DIVISION, slug: '', path: '/product
 // Whether `division` is the page at `pathname` (no trailing slash) with ?id=`categoryParam`.
 export const isDivisionPage = (division, pathname, categoryParam) =>
   pathname === '/kategori' && String(division.categoryId) === categoryParam;
+
+// Whether `merk` is the page at `pathname` (no trailing slash) with ?id=`idParam`.
+export const isMerkPage = (merk, pathname, idParam) => pathname === '/merk' && String(merk.id) === idParam;
 
 // Sectors shown on the home page. Informational only (no links): a sector spans several product categories.
 export const SECTORS = [
